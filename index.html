@@ -346,6 +346,20 @@
   .type-badge.General{ background:rgba(167,139,250,0.15); color:var(--lavender); }
   .type-badge.VIP{ background:rgba(245,194,77,0.18); color:var(--gold); }
   .ref-code{ font-family:monospace; font-size:11.5px; color:var(--muted); }
+  .delete-btn{
+    background:rgba(255,110,199,0.1);
+    border:1px solid rgba(255,110,199,0.4);
+    color:var(--pink);
+    border-radius:8px;
+    padding:6px 10px;
+    font-size:11.5px;
+    font-weight:700;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background .15s ease;
+  }
+  .delete-btn:hover{ background:rgba(255,110,199,0.22); }
+  .delete-btn:disabled{ opacity:.5; cursor:default; }
 </style>
 </head>
 <body>
@@ -447,7 +461,7 @@
       </div>
       <div class="admin-table-wrap">
         <table>
-          <thead><tr><th>Nombre</th><th>Teléfono</th><th>Cédula</th><th>Tipo</th><th>Entradas</th><th>Referencia</th></tr></thead>
+          <thead><tr><th>Nombre</th><th>Teléfono</th><th>Cédula</th><th>Tipo</th><th>Entradas</th><th>Referencia</th><th></th></tr></thead>
           <tbody id="adminRows"></tbody>
         </table>
       </div>
@@ -574,7 +588,7 @@
   async function getRegistrations(){
     try{
       const snapshot = await db.collection('registros').orderBy('ts', 'desc').get();
-      return snapshot.docs.map(doc => doc.data());
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }catch(err){
       console.error('Error al leer Firestore', err);
       return [];
@@ -658,10 +672,27 @@
         <td><span class="type-badge ${escapeHtml(e.tipo||'General')}">${escapeHtml(e.tipo||'General')}</span></td>
         <td><span class="ticket-badge">${escapeHtml(e.entradas||'')}</span></td>
         <td><span class="ref-code">${escapeHtml(e.referencia||'—')}</span></td>
+        <td><button type="button" class="delete-btn" data-id="${escapeHtml(e.id||'')}" onclick="eliminarRegistro('${escapeHtml(e.id||'')}', this)">🗑️ Borrar</button></td>
       </tr>
     `);
     adminRows.innerHTML = rowsHtml.join('');
     adminCount.textContent = filtered.length + ' de ' + currentRegistrations.length + ' registro(s) · actualizado ' + new Date().toLocaleTimeString();
+  }
+ 
+  async function eliminarRegistro(id, btnEl){
+    if(!id){ alert('No se pudo identificar este registro.'); return; }
+    const ok = confirm('¿Seguro que quieres borrar este registro? Esta acción no se puede deshacer.');
+    if(!ok) return;
+ 
+    if(btnEl){ btnEl.disabled = true; btnEl.textContent = 'Borrando…'; }
+    try{
+      await db.collection('registros').doc(id).delete();
+      await loadAdminData();
+    }catch(err){
+      console.error('Error al borrar el registro', err);
+      alert('No se pudo borrar el registro. Intenta de nuevo.');
+      if(btnEl){ btnEl.disabled = false; btnEl.textContent = '🗑️ Borrar'; }
+    }
   }
  
   filterTipo.addEventListener('change', renderFilteredRows);
@@ -709,4 +740,3 @@
 </script>
 </body>
 </html>
- 
