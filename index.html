@@ -358,8 +358,6 @@
   <div class="info-row">
     <div class="chip">📅 Sábado 14 de noviembre</div>
     <div class="chip">📍 Bar Zebu</div>
-    <div class="chip">🎟️ General ₡10.000</div>
-    <div class="chip">👑 VIP ₡100.000</div>
   </div>
   <div class="badge18">🔞 Exclusivamente para mayores de edad</div>
 </div>
@@ -392,16 +390,13 @@
         <label class="radio-option"><input type="radio" name="entradas" value="5+">5 o más</label>
       </div>
 
-      <label>Comentarios (opcional)</label>
-      <textarea id="comentarios" rows="2" placeholder="Tu respuesta"></textarea>
-
       <label class="check-option">
         <input type="checkbox" id="edad18" required>
         Confirmo que soy mayor de edad (18+) y que presentaré identificación en la entrada.
       </label>
 
       <div class="note-box">
-        💡 Entrada General: ₡10.000 · Entrada VIP: ₡100.000. El pago se coordina por SINPE con la organización después de tu registro — te vamos a escribir por WhatsApp con los datos de pago.
+        El pago se coordina por SINPE con la organización después de tu registro — te vamos a escribir por WhatsApp con los datos de pago.
       </div>
 
       <button type="submit" class="submit-btn" id="submitBtn">Enviar registro</button>
@@ -621,7 +616,7 @@
       `💵 Total: ₡${totalTexto}`,
       `🔢 Número de referencia: ${entry.referencia || '—'}`,
       '',
-      `Para realizar el pago, el número de SINPE es: ${SINPE_NUMERO}.`,
+      `Para realizar el pago, el número de SINPE es: ${SINPE_NUMERO}. *Por favor agrega el número de referencia en el detalle del SINPE.*`,
       'Cuando lo realices, te pido por favor que me envíes el comprobante de pago. 📲',
       '¡Muchas gracias! 💗'
     ];
