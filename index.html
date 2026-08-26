@@ -537,7 +537,7 @@
 
   function buildBuyerWhatsappUrl(entry){
     const numero = formatPhoneForWhatsapp(entry.telefono);
-    const msg = `Hola ${entry.nombre}! 🌙✨ Te escribo por tu registro para Sweet Dreams. Quiero confirmar la compra de tu(s) ${entry.entradas} entrada(s) y coordinar el pago.`;
+    const msg = `Hola ${entry.nombre}!  Te escribo por tu registro para Sweet Dreams. Quiero confirmar la compra de tu(s) ${entry.entradas} entrada(s) y coordinar el pago. El número de SINPE es: XXXXXXXXXX. Cuando lo realices te pido por favor que me envies el comprobante. ¡Muchas gracias!`;
     return `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
   }
 
