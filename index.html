@@ -610,14 +610,18 @@
 
     const lineas = [
       '¡Hola! 😊 Te escribo por tu registro para Sweet Dreams.',
+       '',
       `Quiero confirmar la compra de ${posesivo} ${entradasLabel}:`,
       `🎟️ Tipo de entrada: ${tipo}`,
+       '',
       `💰 Precio por entrada: ₡${formatColones(precio)}`,
       `💵 Total: ₡${totalTexto}`,
       `🔢 Número de referencia: ${entry.referencia || '—'}`,
       '',
       `Para realizar el pago, el número de SINPE es: ${SINPE_NUMERO}. *Por favor agrega el número de referencia en el detalle del SINPE.*`,
+       '',
       'Cuando lo realices, te pido por favor que me envíes el comprobante de pago. 📲',
+       '',
       '¡Muchas gracias! 💗'
     ];
     const msg = lineas.join('\n');
