@@ -32,7 +32,7 @@
     min-height:100vh;
     padding:0 0 60px;
   }
-
+ 
   /* ---------- Hero ---------- */
   .hero{
     position:relative;
@@ -121,7 +121,7 @@
     font-weight:600;
     letter-spacing:.03em;
   }
-
+ 
   /* ---------- Form ---------- */
   .wrap{
     max-width:520px;
@@ -170,6 +170,7 @@
     outline:none;
     transition:border-color .15s ease, box-shadow .15s ease;
   }
+  textarea{ resize:vertical; min-height:70px; font-family:'Sora', sans-serif; }
   input::placeholder, textarea::placeholder{ color:#6E6294; }
   input:focus, textarea:focus{
     border-color:var(--lavender);
@@ -215,7 +216,7 @@
     line-height:1.6;
     margin-top:6px;
   }
-
+ 
   .submit-btn{
     width:100%;
     margin-top:26px;
@@ -234,7 +235,7 @@
   .submit-btn:hover{ transform:translateY(-1px); }
   .submit-btn:disabled{ opacity:.6; cursor:default; transform:none; }
   .error-text{ color:var(--pink); font-size:12px; margin-top:4px; display:none; }
-
+ 
   /* ---------- Confirmation ---------- */
   .confirm{
     display:none;
@@ -279,7 +280,7 @@
     background:none; border:none; color:#5C5182; text-decoration:underline;
     cursor:pointer; font-size:11.5px; padding:0;
   }
-
+ 
   /* ---------- Admin panel ---------- */
   .admin{ display:none; margin-top:16px; }
   .admin table{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
@@ -348,7 +349,7 @@
 </style>
 </head>
 <body>
-
+ 
 <div class="hero">
   <div class="stars" id="stars"></div>
   <div class="moon">🌙</div>
@@ -361,26 +362,26 @@
   </div>
   <div class="badge18">🔞 Exclusivamente para mayores de edad</div>
 </div>
-
+ 
 <div class="wrap">
   <div class="card top" id="formCard">
     <div class="section-label">💫 Datos del comprador</div>
     <form id="regForm">
       <label>Nombre completo<span class="req">*</span></label>
       <input type="text" id="nombre" placeholder="Tu respuesta" required>
-
+ 
       <label>Número de teléfono / WhatsApp<span class="req">*</span></label>
       <input type="tel" id="telefono" placeholder="Tu respuesta" required>
-
+ 
       <label>Número de cédula<span class="req">*</span></label>
       <input type="text" inputmode="numeric" id="cedula" placeholder="Tu respuesta" required>
-
+ 
       <label>Tipo de entrada<span class="req">*</span></label>
       <div class="radio-group" id="tipoGroup">
         <label class="radio-option"><input type="radio" name="tipo" value="General" required>🎟️ General — ₡10.000</label>
         <label class="radio-option"><input type="radio" name="tipo" value="VIP">👑 VIP — ₡100.000</label>
       </div>
-
+ 
       <label>¿Cuántas entradas deseas?<span class="req">*</span></label>
       <div class="radio-group" id="ticketGroup">
         <label class="radio-option"><input type="radio" name="entradas" value="1" required>1 entrada</label>
@@ -389,20 +390,20 @@
         <label class="radio-option"><input type="radio" name="entradas" value="4">4 entradas</label>
         <label class="radio-option"><input type="radio" name="entradas" value="5+">5 o más</label>
       </div>
-
+ 
       <label class="check-option">
         <input type="checkbox" id="edad18" required>
         Confirmo que soy mayor de edad (18+) y que presentaré identificación en la entrada.
       </label>
-
+ 
       <div class="note-box">
         El pago se coordina por SINPE con la organización después de tu registro — te vamos a escribir por WhatsApp con los datos de pago.
       </div>
-
+ 
       <button type="submit" class="submit-btn" id="submitBtn">Enviar registro</button>
     </form>
   </div>
-
+ 
   <div class="card confirm" id="confirmCard">
     <div class="check">🎉</div>
     <h2>¡Listo, quedaste registrado!</h2>
@@ -410,11 +411,11 @@
     <div class="recap" id="recap"></div>
     <button class="again" id="againBtn">Registrar a alguien más</button>
   </div>
-
+ 
   <footer>
     Sweet Dreams · 14 nov 2026 · Bar Zebu
     <br><button id="toggleAdmin">Panel organizador</button>
-
+ 
     <div class="admin card" id="pinGate" style="text-align:left; margin-top:14px;">
       <div class="section-label">🔒 Acceso organizador</div>
       <label style="margin-top:0;">PIN</label>
@@ -422,7 +423,7 @@
       <div class="error-text" id="pinError" style="display:block; margin-top:8px;"></div>
       <button type="button" class="submit-btn" id="pinSubmit" style="margin-top:14px;">Entrar</button>
     </div>
-
+ 
     <div class="admin card" id="adminPanel" style="text-align:left; margin-top:14px;">
       <div class="section-label" style="display:flex; justify-content:space-between; align-items:center;">
         <span>📋 Registros recibidos</span>
@@ -453,7 +454,7 @@
     </div>
   </footer>
 </div>
-
+ 
 <script>
   // Twinkling stars
   const starsEl = document.getElementById('stars');
@@ -464,25 +465,24 @@
     s.style.animationDelay = (Math.random()*3)+'s';
     starsEl.appendChild(s);
   }
-
+ 
   const form = document.getElementById('regForm');
   const formCard = document.getElementById('formCard');
   const confirmCard = document.getElementById('confirmCard');
   const recap = document.getElementById('recap');
   const submitBtn = document.getElementById('submitBtn');
-
+ 
   function generarReferencia(){
     const parte1 = Date.now().toString(36).toUpperCase().slice(-5);
     const parte2 = Math.random().toString(36).toUpperCase().slice(2, 5);
     return `SD-${parte1}${parte2}`;
   }
-
+ 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const nombre = document.getElementById('nombre').value.trim();
     const telefono = document.getElementById('telefono').value.trim();
     const cedula = document.getElementById('cedula').value.trim();
-    const comentarios = document.getElementById('comentarios').value.trim();
     const tipoEl = document.querySelector('input[name="tipo"]:checked');
     if(!tipoEl){ alert('Selecciona el tipo de entrada (General o VIP).'); return; }
     const tipo = tipoEl.value;
@@ -490,15 +490,15 @@
     if(!entradasEl){ alert('Selecciona cuántas entradas deseas.'); return; }
     const entradas = entradasEl.value;
     const referencia = generarReferencia();
-
+ 
     submitBtn.disabled = true;
     submitBtn.textContent = 'Enviando…';
-
+ 
     const entry = {
-      nombre, telefono, cedula, tipo, entradas, comentarios, referencia,
+      nombre, telefono, cedula, tipo, entradas, referencia,
       ts: new Date().toISOString()
     };
-
+ 
     let saveFailed = false;
     try{
       await db.collection('registros').add(entry);
@@ -506,16 +506,16 @@
       console.error('Error al guardar en Firestore', err);
       saveFailed = true;
     }
-
+ 
     if(saveFailed){
       submitBtn.disabled = false;
       submitBtn.textContent = 'Enviar registro';
       alert('No se pudo guardar tu registro. Por favor intenta de nuevo.');
       return;
     }
-
+ 
     if(adminOpen) loadAdminData();
-
+ 
     recap.innerHTML = `
       <div><span>Nombre</span><span>${escapeHtml(nombre)}</span></div>
       <div><span>Teléfono</span><span>${escapeHtml(telefono)}</span></div>
@@ -524,25 +524,25 @@
       <div><span>Entradas</span><span>${escapeHtml(entradas)}</span></div>
       <div><span>N° de referencia</span><span>${escapeHtml(referencia)}</span></div>
     `;
-
+ 
     formCard.style.display = 'none';
     confirmCard.style.display = 'block';
     submitBtn.disabled = false;
     submitBtn.textContent = 'Enviar registro';
   });
-
+ 
   document.getElementById('againBtn').addEventListener('click', () => {
     form.reset();
     confirmCard.style.display = 'none';
     formCard.style.display = 'block';
   });
-
+ 
   function escapeHtml(str){
     const d = document.createElement('div');
     d.textContent = str;
     return d.innerHTML;
   }
-
+ 
   // 🔗 Conexión a Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCxW7bSCZafZ3QydThF_Kln_OS3FD3aQ2Y",
@@ -554,7 +554,7 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-
+ 
   // Admin panel
   const ADMIN_PIN = '2026'; // cambia este PIN por el que quieras usar
   const toggleAdmin = document.getElementById('toggleAdmin');
@@ -566,11 +566,11 @@
   const adminRows = document.getElementById('adminRows');
   const adminCount = document.getElementById('adminCount');
   const refreshAdmin = document.getElementById('refreshAdmin');
-
+ 
   let adminOpen = false;
   let authenticated = false;
   let pollTimer = null;
-
+ 
   async function getRegistrations(){
     try{
       const snapshot = await db.collection('registros').orderBy('ts', 'desc').get();
@@ -580,22 +580,22 @@
       return [];
     }
   }
-
+ 
   function formatPhoneForWhatsapp(phone){
     let digits = (phone || '').replace(/\D/g, '');
     if(digits.length === 8) digits = '506' + digits; // agrega código de Costa Rica si falta
     return digits;
   }
-
+ 
   // 🔗 Número de SINPE Móvil para recibir los pagos (reemplázalo por el real)
   const SINPE_NUMERO = '71344131';
-
+ 
   const PRECIOS = { General: 10000, VIP: 100000 };
-
+ 
   function formatColones(num){
     return num.toLocaleString('es-CR');
   }
-
+ 
   function buildBuyerWhatsappUrl(entry){
     const numero = formatPhoneForWhatsapp(entry.telefono);
     const tipo = entry.tipo === 'VIP' ? 'VIP' : 'General';
@@ -607,7 +607,7 @@
       : formatColones(total);
     const posesivo = cantidadNum === 1 ? 'tu' : 'tus';
     const entradasLabel = entry.entradas === '1' ? '1 entrada' : `${entry.entradas} entradas`;
-
+ 
     const lineas = [
       '¡Hola!',
       'Te escribo por tu registro para BrukOff Sweet Dreams.',
@@ -627,11 +627,11 @@
     const msg = lineas.join('\n');
     return `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
   }
-
+ 
   let currentRegistrations = [];
   const filterTipo = document.getElementById('filterTipo');
   const filterCantidad = document.getElementById('filterCantidad');
-
+ 
   async function loadAdminData(){
     adminCount.textContent = 'Cargando…';
     try{
@@ -641,7 +641,7 @@
       adminCount.textContent = 'No se pudieron cargar los registros.';
     }
   }
-
+ 
   function renderFilteredRows(){
     const tipoVal = filterTipo.value;
     const cantidadVal = filterCantidad.value;
@@ -663,10 +663,10 @@
     adminRows.innerHTML = rowsHtml.join('');
     adminCount.textContent = filtered.length + ' de ' + currentRegistrations.length + ' registro(s) · actualizado ' + new Date().toLocaleTimeString();
   }
-
+ 
   filterTipo.addEventListener('change', renderFilteredRows);
   filterCantidad.addEventListener('change', renderFilteredRows);
-
+ 
   function openAdmin(){
     adminOpen = true;
     adminPanel.style.display = 'block';
@@ -674,13 +674,13 @@
     if(pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(loadAdminData, 8000); // se refresca solo cada 8s mientras está abierto
   }
-
+ 
   function closeAdmin(){
     adminOpen = false;
     adminPanel.style.display = 'none';
     if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
   }
-
+ 
   toggleAdmin.addEventListener('click', () => {
     if(authenticated){
       adminOpen ? closeAdmin() : openAdmin();
@@ -692,7 +692,7 @@
     pinInput.value = '';
     if(!showingGate) pinInput.focus();
   });
-
+ 
   function checkPin(){
     if(pinInput.value === ADMIN_PIN){
       authenticated = true;
@@ -704,8 +704,9 @@
   }
   pinSubmit.addEventListener('click', checkPin);
   pinInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') checkPin(); });
-
+ 
   refreshAdmin.addEventListener('click', loadAdminData);
 </script>
 </body>
 </html>
+ 
