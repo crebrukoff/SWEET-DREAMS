@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
   :root{
     --bg-deep:#120C24;
@@ -32,7 +34,7 @@
     min-height:100vh;
     padding:0 0 60px;
   }
- 
+
   /* ---------- Hero ---------- */
   .hero{
     position:relative;
@@ -121,7 +123,7 @@
     font-weight:600;
     letter-spacing:.03em;
   }
- 
+
   /* ---------- Form ---------- */
   .wrap{
     max-width:520px;
@@ -216,7 +218,7 @@
     line-height:1.6;
     margin-top:6px;
   }
- 
+
   .submit-btn{
     width:100%;
     margin-top:26px;
@@ -235,7 +237,7 @@
   .submit-btn:hover{ transform:translateY(-1px); }
   .submit-btn:disabled{ opacity:.6; cursor:default; transform:none; }
   .error-text{ color:var(--pink); font-size:12px; margin-top:4px; display:none; }
- 
+
   /* ---------- Confirmation ---------- */
   .confirm{
     display:none;
@@ -280,7 +282,7 @@
     background:none; border:none; color:#5C5182; text-decoration:underline;
     cursor:pointer; font-size:11.5px; padding:0;
   }
- 
+
   /* ---------- Admin panel ---------- */
   .admin{ display:none; margin-top:16px; }
   .admin table{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
@@ -360,10 +362,113 @@
   }
   .delete-btn:hover{ background:rgba(255,110,199,0.22); }
   .delete-btn:disabled{ opacity:.5; cursor:default; }
+
+  /* ---------- Dashboard organizador ---------- */
+  .stats-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .stat-card{
+    background:var(--bg-field);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+  }
+  .stat-card .stat-label{
+    font-size:11px; color:var(--muted); text-transform:uppercase;
+    letter-spacing:.06em; margin-bottom:6px; font-weight:700;
+  }
+  .stat-card .stat-value{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:28px; letter-spacing:.02em;
+    color:var(--text);
+  }
+  .stat-card.money .stat-value{ color:var(--gold); }
+  .stat-card.tickets .stat-value{ color:var(--lavender); }
+  .breakdown-row{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:12.5px; padding:5px 0;
+  }
+  .breakdown-row .bar-bg{
+    flex:1; height:6px; background:var(--bg-deep); border-radius:99px; margin:0 8px; overflow:hidden;
+  }
+  .breakdown-row .bar-fill{ height:100%; border-radius:99px; background:linear-gradient(90deg,var(--lavender),var(--pink)); }
+
+  .admin-tabs{ display:flex; gap:6px; margin-bottom:14px; }
+  .admin-tab-btn{
+    flex:1; padding:10px; border-radius:10px; border:1px solid var(--line);
+    background:var(--bg-field); color:var(--muted); font-size:12.5px; font-weight:700;
+    cursor:pointer; font-family:'Sora', sans-serif;
+  }
+  .admin-tab-btn.active{ background:rgba(255,110,199,0.12); border-color:var(--pink); color:var(--pink); }
+  .admin-view{ display:none; }
+  .admin-view.active{ display:block; }
+
+  .status-badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; }
+  .status-badge.pendiente{ background:rgba(156,143,194,0.18); color:var(--muted); }
+  .status-badge.activa{ background:rgba(80,220,150,0.15); color:#4ADE80; }
+  .status-badge.usada{ background:rgba(255,110,199,0.15); color:var(--pink); }
+
+  .confirm-btn{
+    background:rgba(167,139,250,0.14); border:1px solid rgba(167,139,250,0.45);
+    color:var(--lavender); border-radius:8px; padding:6px 10px; font-size:11.5px;
+    font-weight:700; cursor:pointer; white-space:nowrap; margin-right:6px;
+  }
+  .confirm-btn:hover{ background:rgba(167,139,250,0.26); }
+  .confirm-btn:disabled{ opacity:.5; cursor:default; }
+  .action-cell{ display:flex; gap:6px; flex-wrap:wrap; }
+
+  /* ---------- Modal QR ---------- */
+  .qr-overlay{
+    display:none; position:fixed; inset:0; background:rgba(8,5,18,0.8);
+    z-index:50; align-items:center; justify-content:center; padding:20px;
+  }
+  .qr-modal{
+    background:var(--bg-card); border:1px solid var(--line); border-radius:16px;
+    padding:24px; max-width:340px; width:100%; text-align:center;
+  }
+  .qr-modal h3{ font-family:'Bebas Neue',sans-serif; font-size:26px; margin:0 0 4px; }
+  .qr-modal .qr-code-text{ font-family:monospace; font-size:12px; color:var(--muted); margin-bottom:14px; word-break:break-all; }
+  #qrCanvasWrap{ background:#fff; border-radius:12px; padding:14px; display:inline-block; margin-bottom:14px; }
+  .qr-modal-actions{ display:flex; gap:8px; margin-top:6px; }
+  .qr-modal-actions button, .qr-modal-actions a{
+    flex:1; padding:11px; border-radius:10px; border:1px solid var(--line);
+    background:var(--bg-field); color:var(--text); font-size:12.5px; font-weight:700;
+    cursor:pointer; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:5px;
+  }
+  .qr-modal-actions a.wa-send{ background:rgba(37,211,102,0.14); border-color:rgba(37,211,102,0.4); color:#25D366; }
+  .qr-close{ margin-top:14px; background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; }
+
+  /* ---------- Escáner ---------- */
+  #qrReader{ border-radius:12px; overflow:hidden; border:1px solid var(--line); margin-bottom:14px; }
+  .manual-check-row{ display:flex; gap:8px; margin-top:6px; }
+  .manual-check-row input{ flex:1; }
+  .manual-check-row button{
+    background:linear-gradient(90deg,var(--lavender),var(--pink)); color:#170F2E;
+    border:none; border-radius:10px; padding:0 16px; font-weight:700; cursor:pointer; font-size:13px;
+  }
+  .scan-result{
+    margin-top:16px; border-radius:12px; padding:16px; border:1px solid var(--line); display:none;
+  }
+  .scan-result.ok{ background:rgba(80,220,150,0.1); border-color:rgba(80,220,150,0.4); }
+  .scan-result.used{ background:rgba(245,194,77,0.1); border-color:rgba(245,194,77,0.4); }
+  .scan-result.invalid{ background:rgba(255,110,199,0.1); border-color:rgba(255,110,199,0.4); }
+  .scan-result h4{ margin:0 0 8px; font-size:16px; }
+  .scan-result p{ margin:2px 0; font-size:12.5px; color:var(--muted); }
+  .scan-toggle{ display:flex; gap:6px; margin-bottom:12px; }
+  .scan-toggle button{
+    flex:1; padding:9px; border-radius:8px; border:1px solid var(--line);
+    background:var(--bg-field); color:var(--muted); font-size:12px; font-weight:700; cursor:pointer;
+  }
+  .scan-toggle button.active{ border-color:var(--lavender); color:var(--lavender); background:rgba(167,139,250,0.1); }
+  .scan-block{ display:none; }
+  .scan-block.active{ display:block; }
 </style>
 </head>
 <body>
- 
+
 <div class="hero">
   <div class="stars" id="stars"></div>
   <div class="moon">🌙</div>
@@ -376,26 +481,27 @@
   </div>
   <div class="badge18">🔞 Exclusivamente para mayores de edad</div>
 </div>
- 
+
 <div class="wrap">
   <div class="card top" id="formCard">
     <div class="section-label">💫 Datos del comprador</div>
     <form id="regForm">
       <label>Nombre completo<span class="req">*</span></label>
       <input type="text" id="nombre" placeholder="Tu respuesta" required>
- 
+
       <label>Número de teléfono / WhatsApp<span class="req">*</span></label>
-      <input type="tel" id="telefono" placeholder="Tu respuesta" required>
- 
+      <input type="tel" id="telefono" placeholder="8888 8888" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required>
+      <div class="hint">8 dígitos, sin +506 (ej: 88888888)</div>
+
       <label>Número de cédula<span class="req">*</span></label>
       <input type="text" inputmode="numeric" id="cedula" placeholder="Tu respuesta" required>
- 
+
       <label>Tipo de entrada<span class="req">*</span></label>
       <div class="radio-group" id="tipoGroup">
         <label class="radio-option"><input type="radio" name="tipo" value="General" required>🎟️ General — ₡10.000</label>
         <label class="radio-option"><input type="radio" name="tipo" value="VIP">👑 VIP — ₡100.000</label>
       </div>
- 
+
       <label>¿Cuántas entradas deseas?<span class="req">*</span></label>
       <div class="radio-group" id="ticketGroup">
         <label class="radio-option"><input type="radio" name="entradas" value="1" required>1 entrada</label>
@@ -404,20 +510,20 @@
         <label class="radio-option"><input type="radio" name="entradas" value="4">4 entradas</label>
         <label class="radio-option"><input type="radio" name="entradas" value="5+">5 o más</label>
       </div>
- 
+
       <label class="check-option">
         <input type="checkbox" id="edad18" required>
         Confirmo que soy mayor de edad (18+) y que presentaré identificación en la entrada.
       </label>
- 
+
       <div class="note-box">
         El pago se coordina por SINPE con la organización después de tu registro — te vamos a escribir por WhatsApp con los datos de pago.
       </div>
- 
+
       <button type="submit" class="submit-btn" id="submitBtn">Enviar registro</button>
     </form>
   </div>
- 
+
   <div class="card confirm" id="confirmCard">
     <div class="check">🎉</div>
     <h2>¡Listo, quedaste registrado!</h2>
@@ -425,11 +531,11 @@
     <div class="recap" id="recap"></div>
     <button class="again" id="againBtn">Registrar a alguien más</button>
   </div>
- 
+
   <footer>
     Sweet Dreams · 14 nov 2026 · Bar Zebu
     <br><button id="toggleAdmin">Panel organizador</button>
- 
+
     <div class="admin card" id="pinGate" style="text-align:left; margin-top:14px;">
       <div class="section-label">🔒 Acceso organizador</div>
       <label style="margin-top:0;">PIN</label>
@@ -437,38 +543,107 @@
       <div class="error-text" id="pinError" style="display:block; margin-top:8px;"></div>
       <button type="button" class="submit-btn" id="pinSubmit" style="margin-top:14px;">Entrar</button>
     </div>
- 
+
     <div class="admin card" id="adminPanel" style="text-align:left; margin-top:14px;">
       <div class="section-label" style="display:flex; justify-content:space-between; align-items:center;">
-        <span>📋 Registros recibidos</span>
+        <span>📋 Panel del organizador</span>
         <button type="button" id="refreshAdmin" style="background:none;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;">🔄 Actualizar</button>
       </div>
-      <div class="admin-count" id="adminCount">Cargando…</div>
-      <div class="filters-row">
-        <select id="filterTipo">
-          <option value="">Todos los tipos</option>
-          <option value="General">🎟️ General</option>
-          <option value="VIP">👑 VIP</option>
-        </select>
-        <select id="filterCantidad">
-          <option value="">Todas las cantidades</option>
-          <option value="1">1 entrada</option>
-          <option value="2">2 entradas</option>
-          <option value="3">3 entradas</option>
-          <option value="4">4 entradas</option>
-          <option value="5+">5 o más</option>
-        </select>
+
+      <div class="stats-grid">
+        <div class="stat-card tickets">
+          <div class="stat-label">Entradas vendidas</div>
+          <div class="stat-value" id="statEntradas">0</div>
+        </div>
+        <div class="stat-card money">
+          <div class="stat-label">Recaudado</div>
+          <div class="stat-value" id="statMonto">₡0</div>
+        </div>
       </div>
-      <div class="admin-table-wrap">
-        <table>
-          <thead><tr><th>Nombre</th><th>Teléfono</th><th>Cédula</th><th>Tipo</th><th>Entradas</th><th>Referencia</th><th></th></tr></thead>
-          <tbody id="adminRows"></tbody>
-        </table>
+      <div class="stat-card" style="margin-bottom:16px;">
+        <div class="stat-label">Desglose por tipo</div>
+        <div id="breakdownWrap"></div>
+      </div>
+
+      <div class="admin-tabs">
+        <button type="button" class="admin-tab-btn active" data-tab="registros">📋 Registros</button>
+        <button type="button" class="admin-tab-btn" data-tab="scanner">📷 Validación QR</button>
+      </div>
+
+      <!-- Vista: Registros -->
+      <div class="admin-view active" id="viewRegistros">
+        <div class="admin-count" id="adminCount">Cargando…</div>
+        <div class="filters-row">
+          <select id="filterTipo">
+            <option value="">Todos los tipos</option>
+            <option value="General">🎟️ General</option>
+            <option value="VIP">👑 VIP</option>
+          </select>
+          <select id="filterCantidad">
+            <option value="">Todas las cantidades</option>
+            <option value="1">1 entrada</option>
+            <option value="2">2 entradas</option>
+            <option value="3">3 entradas</option>
+            <option value="4">4 entradas</option>
+            <option value="5+">5 o más</option>
+          </select>
+          <select id="filterEstado">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">⏳ Pendiente</option>
+            <option value="confirmado">✅ Confirmado</option>
+          </select>
+          <input type="text" id="filterFecha" placeholder="Buscar fecha (dd/mm/aaaa)" style="flex:1;min-width:160px;background:var(--bg-field);border:1px solid var(--line);color:var(--text);font-size:12.5px;padding:9px 10px;border-radius:8px;">
+        </div>
+        <div class="admin-table-wrap">
+          <table>
+            <thead><tr><th>Nombre</th><th>Teléfono</th><th>Cédula</th><th>Tipo</th><th>Ent.</th><th>Estado</th><th>Referencia</th><th>Acciones</th></tr></thead>
+            <tbody id="adminRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Vista: Escáner / Validación -->
+      <div class="admin-view" id="viewScanner">
+        <div class="scan-toggle">
+          <button type="button" class="scan-block-btn active" data-block="camera">📷 Cámara</button>
+          <button type="button" class="scan-block-btn" data-block="manual">⌨️ Manual</button>
+        </div>
+
+        <div class="scan-block active" id="blockCamera">
+          <div id="qrReader"></div>
+          <div class="hint" id="cameraHint">Presiona "Iniciar cámara" para escanear.</div>
+          <button type="button" class="submit-btn" id="startCameraBtn" style="margin-top:10px;">Iniciar cámara</button>
+          <button type="button" class="submit-btn" id="stopCameraBtn" style="margin-top:10px; display:none; background:var(--bg-field); color:var(--text);">Detener cámara</button>
+        </div>
+
+        <div class="scan-block" id="blockManual">
+          <label style="margin-top:0;">Código de la entrada</label>
+          <div class="manual-check-row">
+            <input type="text" id="manualCode" placeholder="Ej: SDQ-XXXXXXXX">
+            <button type="button" id="manualCheckBtn">Validar</button>
+          </div>
+        </div>
+
+        <div class="scan-result" id="scanResult"></div>
+      </div>
+    </div>
+
+    <!-- Modal QR generado -->
+    <div class="qr-overlay" id="qrOverlay">
+      <div class="qr-modal">
+        <h3>🎫 Entrada generada</h3>
+        <div class="qr-code-text" id="qrCodeText"></div>
+        <div id="qrCanvasWrap"></div>
+        <div class="qr-modal-actions">
+          <button type="button" id="qrDownloadBtn">⬇️ Descargar</button>
+          <a href="#" id="qrWhatsappBtn" target="_blank" rel="noopener" class="wa-send">📲 Enviar</a>
+        </div>
+        <button type="button" class="qr-close" id="qrCloseBtn">Cerrar</button>
       </div>
     </div>
   </footer>
 </div>
- 
+
 <script>
   // Twinkling stars
   const starsEl = document.getElementById('stars');
@@ -479,23 +654,31 @@
     s.style.animationDelay = (Math.random()*3)+'s';
     starsEl.appendChild(s);
   }
- 
+
   const form = document.getElementById('regForm');
   const formCard = document.getElementById('formCard');
   const confirmCard = document.getElementById('confirmCard');
   const recap = document.getElementById('recap');
   const submitBtn = document.getElementById('submitBtn');
- 
+
   function generarReferencia(){
     const parte1 = Date.now().toString(36).toUpperCase().slice(-5);
     const parte2 = Math.random().toString(36).toUpperCase().slice(2, 5);
     return `SD-${parte1}${parte2}`;
   }
- 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+
+  const telefonoInput = document.getElementById('telefono');
+  telefonoInput.addEventListener('input', () => {
+    telefonoInput.value = telefonoInput.value.replace(/\D/g, '').slice(0, 8);
+  });
+
+  form.addEventListener('submit', async (e) => {    e.preventDefault();
     const nombre = document.getElementById('nombre').value.trim();
     const telefono = document.getElementById('telefono').value.trim();
+    if(!/^\d{8}$/.test(telefono)){
+      alert('El número de teléfono debe tener exactamente 8 dígitos, sin +506 (ej: 88888888).');
+      return;
+    }
     const cedula = document.getElementById('cedula').value.trim();
     const tipoEl = document.querySelector('input[name="tipo"]:checked');
     if(!tipoEl){ alert('Selecciona el tipo de entrada (General o VIP).'); return; }
@@ -504,15 +687,15 @@
     if(!entradasEl){ alert('Selecciona cuántas entradas deseas.'); return; }
     const entradas = entradasEl.value;
     const referencia = generarReferencia();
- 
+
     submitBtn.disabled = true;
     submitBtn.textContent = 'Enviando…';
- 
+
     const entry = {
       nombre, telefono, cedula, tipo, entradas, referencia,
       ts: new Date().toISOString()
     };
- 
+
     let saveFailed = false;
     try{
       await db.collection('registros').add(entry);
@@ -520,16 +703,16 @@
       console.error('Error al guardar en Firestore', err);
       saveFailed = true;
     }
- 
+
     if(saveFailed){
       submitBtn.disabled = false;
       submitBtn.textContent = 'Enviar registro';
       alert('No se pudo guardar tu registro. Por favor intenta de nuevo.');
       return;
     }
- 
+
     if(adminOpen) loadAdminData();
- 
+
     recap.innerHTML = `
       <div><span>Nombre</span><span>${escapeHtml(nombre)}</span></div>
       <div><span>Teléfono</span><span>${escapeHtml(telefono)}</span></div>
@@ -538,25 +721,25 @@
       <div><span>Entradas</span><span>${escapeHtml(entradas)}</span></div>
       <div><span>N° de referencia</span><span>${escapeHtml(referencia)}</span></div>
     `;
- 
+
     formCard.style.display = 'none';
     confirmCard.style.display = 'block';
     submitBtn.disabled = false;
     submitBtn.textContent = 'Enviar registro';
   });
- 
+
   document.getElementById('againBtn').addEventListener('click', () => {
     form.reset();
     confirmCard.style.display = 'none';
     formCard.style.display = 'block';
   });
- 
+
   function escapeHtml(str){
     const d = document.createElement('div');
     d.textContent = str;
     return d.innerHTML;
   }
- 
+
   // 🔗 Conexión a Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCxW7bSCZafZ3QydThF_Kln_OS3FD3aQ2Y",
@@ -568,7 +751,7 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
- 
+
   // Admin panel
   const ADMIN_PIN = '2026'; // cambia este PIN por el que quieras usar
   const toggleAdmin = document.getElementById('toggleAdmin');
@@ -580,11 +763,14 @@
   const adminRows = document.getElementById('adminRows');
   const adminCount = document.getElementById('adminCount');
   const refreshAdmin = document.getElementById('refreshAdmin');
- 
+
   let adminOpen = false;
   let authenticated = false;
   let pollTimer = null;
- 
+
+  // Guarda quién validó entradas en este dispositivo (simple, sin login real)
+  const VALIDADOR_ID = 'organizador-' + Math.random().toString(36).slice(2, 7);
+
   async function getRegistrations(){
     try{
       const snapshot = await db.collection('registros').orderBy('ts', 'desc').get();
@@ -594,22 +780,32 @@
       return [];
     }
   }
- 
+
+  async function getEntradas(){
+    try{
+      const snapshot = await db.collection('entradas').orderBy('emitidaEn', 'desc').get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }catch(err){
+      console.error('Error al leer entradas', err);
+      return [];
+    }
+  }
+
   function formatPhoneForWhatsapp(phone){
     let digits = (phone || '').replace(/\D/g, '');
     if(digits.length === 8) digits = '506' + digits; // agrega código de Costa Rica si falta
     return digits;
   }
- 
+
   // 🔗 Número de SINPE Móvil para recibir los pagos (reemplázalo por el real)
   const SINPE_NUMERO = '71344131';
- 
+
   const PRECIOS = { General: 10000, VIP: 100000 };
- 
+
   function formatColones(num){
-    return num.toLocaleString('es-CR');
+    return '₡' + num.toLocaleString('es-CR');
   }
- 
+
   function buildBuyerWhatsappUrl(entry){
     const numero = formatPhoneForWhatsapp(entry.telefono);
     const tipo = entry.tipo === 'VIP' ? 'VIP' : 'General';
@@ -621,15 +817,15 @@
       : formatColones(total);
     const posesivo = cantidadNum === 1 ? 'tu' : 'tus';
     const entradasLabel = entry.entradas === '1' ? '1 entrada' : `${entry.entradas} entradas`;
- 
+
     const lineas = [
       '¡Hola!',
       'Te escribo por tu registro para BrukOff Sweet Dreams.',
        '',
       `Quiero confirmar la compra de ${posesivo} ${entradasLabel}:`,
       `-Tipo de entrada: ${tipo}`,
-      `-Precio por entrada: ₡${formatColones(precio)}`,
-      `-Total: ₡${totalTexto}`,
+      `-Precio por entrada: ${formatColones(precio)}`,
+      `-Total: ${totalTexto}`,
       `-Número de referencia: ${entry.referencia || '—'}`,
       '',
       `Para realizar el pago, el número de SINPE es: ${SINPE_NUMERO}. *Por favor agrega el número de referencia en el detalle del SINPE.*`,
@@ -641,49 +837,275 @@
     const msg = lineas.join('\n');
     return `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
   }
- 
+
+  // ===================================================================
+  // ENTREGA DE ENTRADAS: código único + QR + envío
+  // ===================================================================
+
+  // Genera un código único e irrepetible para la entrada.
+  // No contiene datos personales — solo un identificador aleatorio.
+  function generarCodigoEntrada(){
+    if(window.crypto && crypto.randomUUID){
+      return 'SDQ-' + crypto.randomUUID().split('-')[0].toUpperCase() + '-' + Date.now().toString(36).toUpperCase();
+    }
+    // Fallback si el navegador no soporta randomUUID
+    const rand = Math.random().toString(36).slice(2, 10).toUpperCase();
+    return 'SDQ-' + rand + '-' + Date.now().toString(36).toUpperCase();
+  }
+
+  // Cuenta cuántas entradas individuales ya se generaron para un registro
+  function entradasGeneradasPara(registroId){
+    return currentEntradas.filter(e => e.registroId === registroId).length;
+  }
+
+  function cantidadSolicitada(entradasStr){
+    return entradasStr === '5+' ? 5 : (parseInt(entradasStr, 10) || 1);
+  }
+
+  // Crea UNA entrada individual (código único) para un registro dado.
+  // Se puede llamar varias veces si el registro pidió más de 1 entrada.
+  async function generarEntradaParaRegistro(registro){
+    const codigo = generarCodigoEntrada();
+    const entradaDoc = {
+      codigo,
+      registroId: registro.id,
+      nombre: registro.nombre || '',
+      telefono: registro.telefono || '',
+      tipo: registro.tipo || 'General',
+      estado: 'activa',
+      emitidaEn: new Date().toISOString(),
+      usadaEn: null,
+      validadoPor: null
+    };
+    // Usamos el código como ID del documento -> imposible que se repita sin fallar.
+    await db.collection('entradas').doc(codigo).set(entradaDoc);
+    return entradaDoc;
+  }
+
+  async function confirmarPago(registro, btnEl){
+    const yaGeneradas = entradasGeneradasPara(registro.id);
+    const totalSolicitado = cantidadSolicitada(registro.entradas);
+    if(yaGeneradas >= totalSolicitado){
+      alert('Este registro ya tiene todas sus entradas generadas.');
+      return;
+    }
+    if(btnEl){ btnEl.disabled = true; btnEl.textContent = 'Generando…'; }
+    try{
+      // Genera solo la siguiente entrada pendiente (una por clic, para poder
+      // ir mostrando/enviando el QR de cada una individualmente).
+      const nuevaEntrada = await generarEntradaParaRegistro(registro);
+      currentEntradas.unshift(nuevaEntrada);
+      await refreshStatsAndTable();
+      mostrarModalQR(nuevaEntrada, registro);
+    }catch(err){
+      console.error('Error al generar la entrada', err);
+      alert('No se pudo generar la entrada. Intenta de nuevo.');
+    }finally{
+      if(btnEl){ btnEl.disabled = false; btnEl.textContent = '✅ Confirmar pago / Generar entrada'; }
+    }
+  }
+
+  // ---------- Modal QR ----------
+  const qrOverlay = document.getElementById('qrOverlay');
+  const qrCodeText = document.getElementById('qrCodeText');
+  const qrCanvasWrap = document.getElementById('qrCanvasWrap');
+  const qrDownloadBtn = document.getElementById('qrDownloadBtn');
+  const qrWhatsappBtn = document.getElementById('qrWhatsappBtn');
+  const qrCloseBtn = document.getElementById('qrCloseBtn');
+  let qrInstance = null;
+
+  function mostrarModalQR(entrada, registro){
+    qrCodeText.textContent = entrada.codigo;
+    qrCanvasWrap.innerHTML = '';
+    qrInstance = new QRCode(qrCanvasWrap, {
+      text: entrada.codigo,
+      width: 210,
+      height: 210,
+      colorDark: '#170F2E',
+      colorLight: '#ffffff'
+    });
+
+    qrDownloadBtn.onclick = () => {
+      setTimeout(() => {
+        const img = qrCanvasWrap.querySelector('img') || qrCanvasWrap.querySelector('canvas');
+        const link = document.createElement('a');
+        link.download = `entrada-${entrada.codigo}.png`;
+        link.href = img.tagName === 'CANVAS' ? img.toDataURL('image/png') : img.src;
+        link.click();
+      }, 150);
+    };
+
+    // ⚠️ INTEGRACIÓN PENDIENTE: envío automático por WhatsApp/SMS.
+    // Por ahora abrimos un chat de WhatsApp pre-armado con el código de la
+    // entrada para que el organizador lo envíe con un clic (igual que el
+    // aviso de pago). Ver función enviarEntradaPorWhatsAppAPI() más abajo
+    // para la estructura lista para conectar una API real.
+    const numero = formatPhoneForWhatsapp(registro.telefono);
+    const mensaje = [
+      `¡Tu entrada para BrukOff Sweet Dreams está confirmada! 🎉`,
+      '',
+      `Código de tu entrada: ${entrada.codigo}`,
+      `Tipo: ${entrada.tipo}`,
+      '',
+      'Te adjuntamos tu código QR — muéstralo en la entrada del evento junto a tu identificación.',
+      'Guárdalo, es único y personal, no lo compartas.'
+    ].join('\n');
+    qrWhatsappBtn.href = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+
+    qrOverlay.style.display = 'flex';
+  }
+
+  qrCloseBtn.addEventListener('click', () => { qrOverlay.style.display = 'none'; });
+  qrOverlay.addEventListener('click', (e) => { if(e.target === qrOverlay) qrOverlay.style.display = 'none'; });
+
+  // ---------------------------------------------------------------
+  // ⚠️ ESTRUCTURA PREPARADA PARA ENVÍO AUTOMÁTICO REAL (no activa)
+  // ---------------------------------------------------------------
+  // Para automatizar el envío del QR por WhatsApp sin intervención manual
+  // del organizador, se necesita una API con credenciales de SERVIDOR
+  // (nunca deben ir en este HTML público). Opciones:
+  //   1) WhatsApp Business Cloud API (Meta) — requiere token de acceso y
+  //      número verificado de WhatsApp Business.
+  //   2) Twilio WhatsApp API — requiere Account SID + Auth Token de Twilio.
+  // En ambos casos, esas credenciales deben vivir en un backend propio
+  // (Cloud Function, servidor Node, etc.) que este HTML llame por fetch(),
+  // NUNCA directamente en el navegador.
+  //
+  // Ejemplo de cómo quedaría esta función una vez tengas ese backend:
+  //
+  // async function enviarEntradaPorWhatsAppAPI(entrada, registro, qrImageBase64){
+  //   const resp = await fetch('https://TU-BACKEND.com/api/enviar-entrada', {
+  //     method: 'POST',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify({
+  //       telefono: registro.telefono,
+  //       codigo: entrada.codigo,
+  //       qrImageBase64
+  //     })
+  //   });
+  //   if(!resp.ok) throw new Error('Fallo el envío automático');
+  // }
+  //
+  // Mientras no exista ese backend, seguimos usando el botón "📲 Enviar"
+  // del modal (abre WhatsApp Web/App con el mensaje ya redactado).
+  // ---------------------------------------------------------------
+
   let currentRegistrations = [];
+  let currentEntradas = [];
   const filterTipo = document.getElementById('filterTipo');
   const filterCantidad = document.getElementById('filterCantidad');
- 
+  const filterEstado = document.getElementById('filterEstado');
+  const filterFecha = document.getElementById('filterFecha');
+
   async function loadAdminData(){
     adminCount.textContent = 'Cargando…';
     try{
-      currentRegistrations = await getRegistrations();
-      renderFilteredRows();
+      const [regs, ents] = await Promise.all([getRegistrations(), getEntradas()]);
+      currentRegistrations = regs;
+      currentEntradas = ents;
+      refreshStatsAndTable();
     }catch(err){
       adminCount.textContent = 'No se pudieron cargar los registros.';
     }
   }
- 
+
+  async function refreshStatsAndTable(){
+    renderStats();
+    renderFilteredRows();
+  }
+
+  // ---------- Estadísticas ----------
+  function renderStats(){
+    const totalEntradas = currentEntradas.length;
+    let totalMonto = 0;
+    const porTipo = {};
+    currentEntradas.forEach(e => {
+      const tipo = e.tipo || 'General';
+      const precio = PRECIOS[tipo] || 0;
+      totalMonto += precio;
+      porTipo[tipo] = (porTipo[tipo] || 0) + 1;
+    });
+
+    document.getElementById('statEntradas').textContent = totalEntradas;
+    document.getElementById('statMonto').textContent = formatColones(totalMonto);
+
+    const breakdownWrap = document.getElementById('breakdownWrap');
+    const tipos = Object.keys(PRECIOS);
+    breakdownWrap.innerHTML = tipos.map(tipo => {
+      const count = porTipo[tipo] || 0;
+      const pct = totalEntradas ? Math.round((count / totalEntradas) * 100) : 0;
+      return `
+        <div class="breakdown-row">
+          <span>${escapeHtml(tipo)}</span>
+          <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;"></div></div>
+          <span>${count}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ---------- Tabla de registros ----------
+  function estadoRegistro(registro){
+    const generadas = entradasGeneradasPara(registro.id);
+    const solicitadas = cantidadSolicitada(registro.entradas);
+    if(generadas === 0) return 'pendiente';
+    if(generadas < solicitadas) return 'pendiente'; // aún faltan entradas por generar
+    return 'confirmado';
+  }
+
   function renderFilteredRows(){
     const tipoVal = filterTipo.value;
     const cantidadVal = filterCantidad.value;
+    const estadoVal = filterEstado.value;
+    const fechaVal = (filterFecha.value || '').trim();
+
     const filtered = currentRegistrations.filter(e => {
       if(tipoVal && (e.tipo || 'General') !== tipoVal) return false;
       if(cantidadVal && e.entradas !== cantidadVal) return false;
+      if(estadoVal && estadoRegistro(e) !== estadoVal) return false;
+      if(fechaVal){
+        const fechaRegistro = e.ts ? new Date(e.ts).toLocaleDateString('es-CR') : '';
+        if(!fechaRegistro.includes(fechaVal)) return false;
+      }
       return true;
     });
-    const rowsHtml = filtered.map(e => `
+
+    const rowsHtml = filtered.map(e => {
+      const estado = estadoRegistro(e);
+      const generadas = entradasGeneradasPara(e.id);
+      const solicitadas = cantidadSolicitada(e.entradas);
+      const faltan = solicitadas - generadas;
+      return `
       <tr>
         <td class="name-cell">${escapeHtml(e.nombre||'')}</td>
         <td><a class="wa-link" href="${buildBuyerWhatsappUrl(e)}" target="_blank" rel="noopener">📲 ${escapeHtml(e.telefono||'')}</a></td>
         <td>${escapeHtml(e.cedula||'')}</td>
         <td><span class="type-badge ${escapeHtml(e.tipo||'General')}">${escapeHtml(e.tipo||'General')}</span></td>
         <td><span class="ticket-badge">${escapeHtml(e.entradas||'')}</span></td>
+        <td><span class="status-badge ${estado}">${estado === 'confirmado' ? '✅ Confirmado' : '⏳ Pendiente ('+generadas+'/'+solicitadas+')'}</span></td>
         <td><span class="ref-code">${escapeHtml(e.referencia||'—')}</span></td>
-        <td><button type="button" class="delete-btn" data-id="${escapeHtml(e.id||'')}" onclick="eliminarRegistro('${escapeHtml(e.id||'')}', this)">🗑️ Borrar</button></td>
+        <td class="action-cell">
+          ${faltan > 0 ? `<button type="button" class="confirm-btn" onclick="confirmarPagoDesdeUI('${escapeHtml(e.id)}', this)">✅ Confirmar pago / Generar entrada</button>` : ''}
+          <button type="button" class="delete-btn" data-id="${escapeHtml(e.id||'')}" onclick="eliminarRegistro('${escapeHtml(e.id||'')}', this)">🗑️ Borrar</button>
+        </td>
       </tr>
-    `);
-    adminRows.innerHTML = rowsHtml.join('');
+    `;
+    }).join('');
+    adminRows.innerHTML = rowsHtml;
     adminCount.textContent = filtered.length + ' de ' + currentRegistrations.length + ' registro(s) · actualizado ' + new Date().toLocaleTimeString();
   }
- 
+
+  function confirmarPagoDesdeUI(registroId, btnEl){
+    const registro = currentRegistrations.find(r => r.id === registroId);
+    if(!registro){ alert('No se encontró el registro.'); return; }
+    confirmarPago(registro, btnEl);
+  }
+
   async function eliminarRegistro(id, btnEl){
     if(!id){ alert('No se pudo identificar este registro.'); return; }
     const ok = confirm('¿Seguro que quieres borrar este registro? Esta acción no se puede deshacer.');
     if(!ok) return;
- 
+
     if(btnEl){ btnEl.disabled = true; btnEl.textContent = 'Borrando…'; }
     try{
       await db.collection('registros').doc(id).delete();
@@ -694,10 +1116,162 @@
       if(btnEl){ btnEl.disabled = false; btnEl.textContent = '🗑️ Borrar'; }
     }
   }
- 
+
   filterTipo.addEventListener('change', renderFilteredRows);
   filterCantidad.addEventListener('change', renderFilteredRows);
- 
+  filterEstado.addEventListener('change', renderFilteredRows);
+  filterFecha.addEventListener('input', renderFilteredRows);
+
+  // ---------- Tabs del panel: Registros / Escáner ----------
+  const adminTabBtns = document.querySelectorAll('.admin-tab-btn');
+  adminTabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      adminTabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('viewRegistros').classList.remove('active');
+      document.getElementById('viewScanner').classList.remove('active');
+      if(btn.dataset.tab === 'registros'){
+        document.getElementById('viewRegistros').classList.add('active');
+      }else{
+        document.getElementById('viewScanner').classList.add('active');
+        stopCameraIfIdle();
+      }
+    });
+  });
+
+  // ---------- Escáner / Validación de entradas ----------
+  const scanBlockBtns = document.querySelectorAll('.scan-block-btn');
+  scanBlockBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      scanBlockBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('blockCamera').classList.remove('active');
+      document.getElementById('blockManual').classList.remove('active');
+      if(btn.dataset.block === 'camera'){
+        document.getElementById('blockCamera').classList.add('active');
+      }else{
+        document.getElementById('blockManual').classList.add('active');
+        stopCamera();
+      }
+    });
+  });
+
+  let html5QrCode = null;
+  let cameraRunning = false;
+  const startCameraBtn = document.getElementById('startCameraBtn');
+  const stopCameraBtn = document.getElementById('stopCameraBtn');
+  const cameraHint = document.getElementById('cameraHint');
+
+  async function startCamera(){
+    try{
+      html5QrCode = new Html5Qrcode('qrReader');
+      await html5QrCode.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: 240 },
+        (decodedText) => {
+          validarEntrada(decodedText.trim());
+        },
+        () => { /* frame sin QR detectado, se ignora */ }
+      );
+      cameraRunning = true;
+      startCameraBtn.style.display = 'none';
+      stopCameraBtn.style.display = 'block';
+      cameraHint.textContent = 'Apunta la cámara al código QR de la entrada.';
+    }catch(err){
+      console.error('Error al iniciar la cámara', err);
+      cameraHint.textContent = 'No se pudo acceder a la cámara. Verifica los permisos del navegador o usa la opción manual.';
+    }
+  }
+
+  async function stopCamera(){
+    if(html5QrCode && cameraRunning){
+      try{ await html5QrCode.stop(); await html5QrCode.clear(); }catch(err){ /* ya estaba detenida */ }
+    }
+    cameraRunning = false;
+    startCameraBtn.style.display = 'block';
+    stopCameraBtn.style.display = 'none';
+  }
+
+  function stopCameraIfIdle(){
+    // Se llama al cambiar de tab para no dejar la cámara encendida de fondo
+    if(document.getElementById('blockManual').classList.contains('active')) stopCamera();
+  }
+
+  startCameraBtn.addEventListener('click', startCamera);
+  stopCameraBtn.addEventListener('click', stopCamera);
+
+  document.getElementById('manualCheckBtn').addEventListener('click', () => {
+    const code = document.getElementById('manualCode').value.trim();
+    if(!code){ alert('Escribe o pega el código de la entrada.'); return; }
+    validarEntrada(code);
+  });
+
+  const scanResult = document.getElementById('scanResult');
+
+  function mostrarResultadoScan(tipo, html){
+    scanResult.className = 'scan-result ' + tipo;
+    scanResult.innerHTML = html;
+    scanResult.style.display = 'block';
+  }
+
+  // Valida una entrada de forma ATÓMICA con una transacción de Firestore.
+  // Esto evita que dos dispositivos marquen la misma entrada como "usada"
+  // al mismo tiempo: solo una de las dos peticiones ganará la transacción.
+  async function validarEntrada(codigo){
+    codigo = (codigo || '').trim();
+    if(!codigo) return;
+
+    mostrarResultadoScan('used', '<p>Verificando código…</p>');
+
+    const ref = db.collection('entradas').doc(codigo);
+    try{
+      const resultado = await db.runTransaction(async (tx) => {
+        const doc = await tx.get(ref);
+        if(!doc.exists){
+          return { estado: 'invalido' };
+        }
+        const data = doc.data();
+        if(data.estado === 'usada'){
+          return { estado: 'ya_usada', data };
+        }
+        // Estado "activa" -> la marcamos como usada dentro de la misma transacción
+        tx.update(ref, {
+          estado: 'usada',
+          usadaEn: new Date().toISOString(),
+          validadoPor: VALIDADOR_ID
+        });
+        return { estado: 'valida', data };
+      });
+
+      if(resultado.estado === 'invalido'){
+        mostrarResultadoScan('invalid', `
+          <h4>❌ Código no encontrado o inválido</h4>
+          <p>Este código no corresponde a ninguna entrada registrada. Acceso denegado.</p>
+        `);
+      }else if(resultado.estado === 'ya_usada'){
+        const fecha = resultado.data.usadaEn ? new Date(resultado.data.usadaEn).toLocaleString('es-CR') : '—';
+        mostrarResultadoScan('used', `
+          <h4>⚠️ Entrada ya utilizada</h4>
+          <p><strong>Nombre:</strong> ${escapeHtml(resultado.data.nombre||'—')}</p>
+          <p><strong>Tipo:</strong> ${escapeHtml(resultado.data.tipo||'—')}</p>
+          <p><strong>Usada el:</strong> ${fecha}</p>
+        `);
+      }else{
+        mostrarResultadoScan('ok', `
+          <h4>✅ Entrada válida — acceso permitido</h4>
+          <p><strong>Nombre:</strong> ${escapeHtml(resultado.data.nombre||'—')}</p>
+          <p><strong>Tipo:</strong> ${escapeHtml(resultado.data.tipo||'—')}</p>
+          <p>Marcada como usada ahora mismo. Ya no podrá volver a ingresar con este código.</p>
+        `);
+      }
+      document.getElementById('manualCode').value = '';
+      if(adminOpen) loadAdminData();
+    }catch(err){
+      console.error('Error al validar la entrada', err);
+      mostrarResultadoScan('invalid', `<h4>❌ Error al validar</h4><p>No se pudo verificar el código. Intenta de nuevo.</p>`);
+    }
+  }
+
   function openAdmin(){
     adminOpen = true;
     adminPanel.style.display = 'block';
@@ -705,13 +1279,14 @@
     if(pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(loadAdminData, 8000); // se refresca solo cada 8s mientras está abierto
   }
- 
+
   function closeAdmin(){
     adminOpen = false;
     adminPanel.style.display = 'none';
+    stopCamera();
     if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
   }
- 
+
   toggleAdmin.addEventListener('click', () => {
     if(authenticated){
       adminOpen ? closeAdmin() : openAdmin();
@@ -723,7 +1298,7 @@
     pinInput.value = '';
     if(!showingGate) pinInput.focus();
   });
- 
+
   function checkPin(){
     if(pinInput.value === ADMIN_PIN){
       authenticated = true;
@@ -735,7 +1310,7 @@
   }
   pinSubmit.addEventListener('click', checkPin);
   pinInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') checkPin(); });
- 
+
   refreshAdmin.addEventListener('click', loadAdminData);
 </script>
 </body>
