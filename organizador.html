@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sweet Dreams — Panel organizador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg-deep:#120C24; --bg-card:#1D1638; --bg-field:#241C42;
+    --lavender:#A78BFA; --pink:#FF6EC7; --gold:#F5C24D;
+    --text:#F3EFFF; --muted:#9C8FC2; --line:#332A5C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 15% 8%, rgba(255,110,199,0.16), transparent 40%),
+      radial-gradient(circle at 85% 0%, rgba(167,139,250,0.20), transparent 45%),
+      var(--bg-deep);
+    color:var(--text); font-family:'Sora', sans-serif; min-height:100vh; padding:0 0 60px;
+  }
+  header.top{
+    padding:26px 20px 18px; text-align:center;
+    background:linear-gradient(180deg, #1A1338 0%, #120C24 100%);
+    border-bottom:1px solid var(--line);
+  }
+  header.top h1{
+    font-family:'Bebas Neue', sans-serif; font-size:clamp(30px,7vw,42px);
+    letter-spacing:.04em; margin:0;
+    background:linear-gradient(90deg,var(--lavender),var(--pink));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  header.top p{ color:var(--muted); font-size:12.5px; margin:6px 0 0; }
+  header.top a.back{ color:var(--muted); font-size:12px; text-decoration:underline; }
+
+  .wrap{ max-width:920px; margin:0 auto; padding:18px 18px 0; }
+  .card{
+    background:var(--bg-card); border:1px solid var(--line); border-radius:18px;
+    padding:22px; margin-top:16px; box-shadow:0 20px 50px rgba(0,0,0,.35);
+  }
+  .section-label{
+    display:flex; align-items:center; gap:8px; font-size:12.5px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--gold); font-weight:700; margin-bottom:16px;
+  }
+  label{ display:block; font-size:14px; font-weight:600; margin:12px 0 8px; }
+  input[type="text"], input[type="password"]{
+    width:100%; background:var(--bg-field); border:1px solid var(--line); border-radius:10px;
+    padding:12px 13px; color:var(--text); font-family:'Sora', sans-serif; font-size:14.5px; outline:none;
+  }
+  input:focus{ border-color:var(--lavender); box-shadow:0 0 0 3px rgba(167,139,250,0.18); }
+  .submit-btn{
+    width:100%; margin-top:14px; padding:14px; border:none; border-radius:12px;
+    background:linear-gradient(90deg,var(--lavender),var(--pink)); color:#170F2E;
+    font-family:'Sora', sans-serif; font-weight:700; font-size:15px; cursor:pointer;
+  }
+  .error-text{ color:var(--pink); font-size:12px; margin-top:8px; min-height:14px; }
+
+  /* Stats */
+  .stats-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:6px; }
+  .stat-card{ background:var(--bg-field); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .stat-card .stat-label{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; font-weight:700; }
+  .stat-card .stat-value{ font-family:'Bebas Neue', sans-serif; font-size:28px; letter-spacing:.02em; color:var(--text); }
+  .stat-card.money .stat-value{ color:var(--gold); }
+  .stat-card.tickets .stat-value{ color:var(--lavender); }
+  .breakdown-row{ display:flex; justify-content:space-between; align-items:center; font-size:12.5px; padding:5px 0; }
+  .breakdown-row .bar-bg{ flex:1; height:6px; background:var(--bg-deep); border-radius:99px; margin:0 8px; overflow:hidden; }
+  .breakdown-row .bar-fill{ height:100%; border-radius:99px; background:linear-gradient(90deg,var(--lavender),var(--pink)); }
+
+  /* Filtros */
+  .filters-row{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .filters-row select, .filters-row input{
+    flex:1; min-width:140px; background:var(--bg-field); border:1px solid var(--line); color:var(--text);
+    font-family:'Sora', sans-serif; font-size:12.5px; padding:9px 10px; border-radius:8px; outline:none;
+  }
+
+  /* Tabla */
+  .admin-table-wrap{ overflow-x:auto; border-radius:10px; }
+  table{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+  thead th{
+    text-align:left; padding:10px 10px; background:rgba(245,194,77,0.08); color:var(--gold);
+    font-weight:700; font-size:11px; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap;
+  }
+  thead th:first-child{ border-radius:8px 0 0 8px; }
+  thead th:last-child{ border-radius:0 8px 8px 0; }
+  td{ padding:11px 10px; border-bottom:1px solid var(--line); vertical-align:middle; color:var(--text); }
+  tbody tr:nth-child(even) td{ background:rgba(255,255,255,0.025); }
+  tbody tr:hover td{ background:rgba(167,139,250,0.06); }
+  tbody tr:last-child td{ border-bottom:none; }
+  .name-cell{ font-weight:600; }
+  .wa-link{ display:inline-flex; align-items:center; gap:5px; color:#25D366; text-decoration:none; font-weight:700; white-space:nowrap; }
+  .wa-link:hover{ text-decoration:underline; }
+  .ticket-badge{ display:inline-block; background:rgba(167,139,250,0.15); color:var(--lavender); padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:700; }
+  .admin-count{ font-size:12px; color:var(--muted); margin-bottom:10px; }
+  .type-badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; }
+  .type-badge.General{ background:rgba(167,139,250,0.15); color:var(--lavender); }
+  .type-badge.VIP{ background:rgba(245,194,77,0.18); color:var(--gold); }
+  .ref-code{ font-family:monospace; font-size:11.5px; color:var(--muted); }
+  .delete-btn{
+    background:rgba(255,110,199,0.1); border:1px solid rgba(255,110,199,0.4); color:var(--pink);
+    border-radius:8px; padding:6px 10px; font-size:11.5px; font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .delete-btn:hover{ background:rgba(255,110,199,0.22); }
+  .delete-btn:disabled{ opacity:.5; cursor:default; }
+  .confirm-btn{
+    background:rgba(167,139,250,0.14); border:1px solid rgba(167,139,250,0.45); color:var(--lavender);
+    border-radius:8px; padding:6px 10px; font-size:11.5px; font-weight:700; cursor:pointer; white-space:nowrap; margin-right:6px;
+  }
+  .confirm-btn:hover{ background:rgba(167,139,250,0.26); }
+  .confirm-btn:disabled{ opacity:.5; cursor:default; }
+  .action-cell{ display:flex; gap:6px; flex-wrap:wrap; }
+  .status-badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
+  .status-badge.pendiente{ background:rgba(156,143,194,0.18); color:var(--muted); }
+  .status-badge.confirmado{ background:rgba(80,220,150,0.15); color:#4ADE80; }
+  .status-badge.parcial{ background:rgba(245,194,77,0.15); color:var(--gold); }
+
+  .top-actions{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:4px; }
+  .ghost-btn{
+    background:none; border:1px solid var(--line); color:var(--text); border-radius:8px;
+    padding:8px 12px; font-size:12px; cursor:pointer; text-decoration:none; display:inline-block;
+  }
+
+  /* Modal QR */
+  .qr-overlay{ display:none; position:fixed; inset:0; background:rgba(8,5,18,0.8); z-index:50; align-items:center; justify-content:center; padding:20px; }
+  .qr-modal{ background:var(--bg-card); border:1px solid var(--line); border-radius:16px; padding:24px; max-width:340px; width:100%; text-align:center; }
+  .qr-modal h3{ font-family:'Bebas Neue',sans-serif; font-size:26px; margin:0 0 4px; }
+  .qr-modal .qr-code-text{ font-family:monospace; font-size:12px; color:var(--muted); margin-bottom:14px; word-break:break-all; }
+  #qrCanvasWrap{ background:#fff; border-radius:12px; padding:14px; display:inline-block; margin-bottom:14px; }
+  .qr-modal-actions{ display:flex; gap:8px; margin-top:6px; }
+  .qr-modal-actions button, .qr-modal-actions a{
+    flex:1; padding:11px; border-radius:10px; border:1px solid var(--line); background:var(--bg-field); color:var(--text);
+    font-size:12.5px; font-weight:700; cursor:pointer; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:5px;
+  }
+  .qr-modal-actions button.wa-send{ background:rgba(37,211,102,0.14); border-color:rgba(37,211,102,0.4); color:#25D366; }
+  .qr-modal-actions button:disabled{ opacity:.6; cursor:default; }
+  .qr-close{ margin-top:14px; background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; }
+
+  .security-note{
+    background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.3); color:var(--muted);
+    border-radius:10px; padding:12px 14px; font-size:12px; line-height:1.6; margin-top:14px;
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Panel organizador</h1>
+  <p>Sweet Dreams · 14 nov 2026 · Bar Zebu · <a class="back" href="index.html">← Volver al registro</a></p>
+</header>
+
+<div class="wrap">
+
+  <!-- PIN gate -->
+  <div class="card" id="pinGate">
+    <div class="section-label">🔒 Acceso organizador</div>
+    <label style="margin-top:0;">PIN</label>
+    <input type="password" id="pinInput" placeholder="Ingresa el PIN" inputmode="numeric">
+    <div class="error-text" id="pinError"></div>
+    <button type="button" class="submit-btn" id="pinSubmit">Entrar</button>
+    <div class="security-note">
+      Este PIN es una protección básica en el navegador, pensada para un evento pequeño. No es una autenticación real de servidor:
+      cualquiera que vea el código fuente podría encontrarlo. Para un control de acceso serio (varios organizadores, permisos distintos,
+      bitácora de quién entró) se necesita un backend con autenticación real y reglas de seguridad de Firestore que exijan ese login.
+    </div>
+  </div>
+
+  <!-- Panel -->
+  <div id="adminPanel" style="display:none;">
+
+    <div class="card">
+      <div class="top-actions">
+        <div class="section-label" style="margin-bottom:0;">📊 Resumen</div>
+        <div style="display:flex; gap:8px;">
+          <a class="ghost-btn" href="validar.html" target="_blank">📷 Ir a validar entradas</a>
+          <button type="button" class="ghost-btn" id="refreshAdmin">🔄 Actualizar</button>
+        </div>
+      </div>
+      <div class="stats-grid" style="margin-top:14px;">
+        <div class="stat-card tickets">
+          <div class="stat-label">Entradas confirmadas</div>
+          <div class="stat-value" id="statEntradas">0</div>
+        </div>
+        <div class="stat-card money">
+          <div class="stat-label">Recaudado</div>
+          <div class="stat-value" id="statMonto">₡0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Entradas activas (sin usar)</div>
+          <div class="stat-value" id="statActivas">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Entradas ya usadas</div>
+          <div class="stat-value" id="statUsadas">0</div>
+        </div>
+      </div>
+      <div class="stat-card" style="margin-top:10px;">
+        <div class="stat-label">Desglose por categoría</div>
+        <div id="breakdownWrap"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">📋 Registros</div>
+      <div class="admin-count" id="adminCount">Cargando…</div>
+      <div class="filters-row">
+        <input type="text" id="filterNombre" placeholder="Buscar por nombre…">
+        <select id="filterTipo">
+          <option value="">Todas las categorías</option>
+          <option value="General">🎟️ General</option>
+          <option value="VIP">👑 VIP</option>
+        </select>
+        <select id="filterEstado">
+          <option value="">Todos los estados</option>
+          <option value="pendiente">⏳ Pendiente</option>
+          <option value="parcial">🟡 Parcialmente confirmado</option>
+          <option value="confirmado">✅ Confirmado</option>
+        </select>
+        <input type="text" id="filterFecha" placeholder="Buscar fecha (dd/mm/aaaa)">
+      </div>
+      <div class="admin-table-wrap">
+        <table>
+          <thead><tr>
+            <th>Nombre</th><th>Teléfono</th><th>Cédula</th><th>Cat.</th><th>Ent.</th>
+            <th>Estado</th><th>Referencia</th><th>Acciones</th>
+          </tr></thead>
+          <tbody id="adminRows"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal QR -->
+<div class="qr-overlay" id="qrOverlay">
+  <div class="qr-modal">
+    <h3>🎫 Entrada generada</h3>
+    <div class="qr-code-text" id="qrCodeText"></div>
+    <div id="qrCanvasWrap"></div>
+    <div class="qr-modal-actions">
+      <button type="button" id="qrDownloadBtn">⬇️ Descargar</button>
+      <button type="button" id="qrWhatsappBtn" class="wa-send">📲 Enviar</button>
+    </div>
+    <p class="hint" style="margin-top:8px;color:var(--muted);font-size:12px;">WhatsApp no permite adjuntar imágenes automáticamente desde un link — al presionar "Enviar" se descarga el QR y se abre el chat; solo debes adjuntar la imagen ya descargada.</p>
+    <button type="button" class="qr-close" id="qrCloseBtn">Cerrar</button>
+  </div>
+</div>
+
+<script>
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str == null ? '' : str;
+    return d.innerHTML;
+  }
+
+  // 🔗 Conexión a Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyCxW7bSCZafZ3QydThF_Kln_OS3FD3aQ2Y",
+    authDomain: "sweet-dreams-51493.firebaseapp.com",
+    projectId: "sweet-dreams-51493",
+    storageBucket: "sweet-dreams-51493.firebasestorage.app",
+    messagingSenderId: "609888686575",
+    appId: "1:609888686575:web:af9b844059f79e0ad6661a"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // ---------- PIN ----------
+  // ⚠️ Cambia este PIN. Recuerda: es una barrera básica en el cliente, no una
+  // autenticación de servidor real (ver nota de seguridad en la página).
+  const ADMIN_PIN = '2026';
+  const pinGate = document.getElementById('pinGate');
+  const pinInput = document.getElementById('pinInput');
+  const pinSubmit = document.getElementById('pinSubmit');
+  const pinError = document.getElementById('pinError');
+  const adminPanel = document.getElementById('adminPanel');
+
+  function checkPin(){
+    if(pinInput.value === ADMIN_PIN){
+      pinGate.style.display = 'none';
+      adminPanel.style.display = 'block';
+      sessionStorage.setItem('sd_admin_ok', '1');
+      openAdmin();
+    }else{
+      pinError.textContent = 'PIN incorrecto, intenta de nuevo.';
+    }
+  }
+  pinSubmit.addEventListener('click', checkPin);
+  pinInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') checkPin(); });
+
+  // Si ya se autenticó en esta pestaña/sesión, no pedir PIN de nuevo
+  if(sessionStorage.getItem('sd_admin_ok') === '1'){
+    pinGate.style.display = 'none';
+    adminPanel.style.display = 'block';
+    openAdmin();
+  }
+
+  // ---------- Datos ----------
+  const PRECIOS = { General: 10000, VIP: 100000 };
+  const SINPE_NUMERO = '71344131'; // 🔗 Número de SINPE Móvil para recibir pagos
+
+  let currentRegistrations = [];
+  let currentEntradas = [];
+  let pollTimer = null;
+
+  const VALIDADOR_ID = 'organizador-' + Math.random().toString(36).slice(2, 7);
+
+  function formatColones(num){ return '₡' + num.toLocaleString('es-CR'); }
+
+  function formatPhoneForWhatsapp(phone){
+    let digits = (phone || '').replace(/\D/g, '');
+    if(digits.length === 8) digits = '506' + digits;
+    return digits;
+  }
+
+  function buildBuyerWhatsappUrl(entry){
+    const numero = formatPhoneForWhatsapp(entry.telefono);
+    const tipo = entry.tipo === 'VIP' ? 'VIP' : 'General';
+    const precio = PRECIOS[tipo];
+    const cantidadNum = entry.entradas === '5+' ? 5 : (parseInt(entry.entradas, 10) || 1);
+    const total = precio * cantidadNum;
+    const totalTexto = entry.entradas === '5+' ? `${formatColones(total)}+ (a confirmar cantidad exacta)` : formatColones(total);
+    const posesivo = cantidadNum === 1 ? 'tu' : 'tus';
+    const entradasLabel = entry.entradas === '1' ? '1 entrada' : `${entry.entradas} entradas`;
+    const lineas = [
+      '¡Hola!', 'Te escribo por tu registro para BrukOff Sweet Dreams.', '',
+      `Quiero confirmar la compra de ${posesivo} ${entradasLabel}:`,
+      `-Tipo de entrada: ${tipo}`, `-Precio por entrada: ${formatColones(precio)}`,
+      `-Total: ${totalTexto}`, `-Número de referencia: ${entry.referencia || '—'}`, '',
+      `Para realizar el pago, el número de SINPE es: ${SINPE_NUMERO}. *Por favor agrega el número de referencia en el detalle del SINPE.*`, '',
+      'Cuando lo realices, te pido por favor que me envíes el comprobante de pago. ', '', '¡Muchas gracias! '
+    ];
+    return `https://wa.me/${numero}?text=${encodeURIComponent(lineas.join('\n'))}`;
+  }
+
+  async function getRegistrations(){
+    try{
+      const snapshot = await db.collection('registros').orderBy('ts', 'desc').get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }catch(err){ console.error('Error al leer Firestore', err); return []; }
+  }
+  async function getEntradas(){
+    try{
+      const snapshot = await db.collection('entradas').orderBy('emitidaEn', 'desc').get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }catch(err){ console.error('Error al leer entradas', err); return []; }
+  }
+
+  // Genera un identificador único e impredecible para la entrada.
+  // No contiene datos personales — es solo un token aleatorio.
+  function generarCodigoEntrada(){
+    if(window.crypto && crypto.randomUUID){
+      return 'SDQ-' + crypto.randomUUID().replace(/-/g,'').toUpperCase().slice(0,16);
+    }
+    const bytes = new Uint8Array(12);
+    (window.crypto || {}).getRandomValues ? crypto.getRandomValues(bytes) : bytes.forEach((_,i)=>bytes[i]=Math.floor(Math.random()*256));
+    return 'SDQ-' + Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+  }
+
+  function entradasGeneradasPara(registroId){
+    return currentEntradas.filter(e => e.registroId === registroId);
+  }
+  function cantidadSolicitada(entradasStr){
+    return entradasStr === '5+' ? 5 : (parseInt(entradasStr, 10) || 1);
+  }
+
+  // Crea UNA entrada individual con token único para un registro.
+  // El documento vive en la colección "entradas", separada de "registros",
+  // e identificada por el propio código (imposible que se duplique sin fallar).
+  async function generarEntradaParaRegistro(registro){
+    const codigo = generarCodigoEntrada();
+    const entradaDoc = {
+      codigo, registroId: registro.id, nombre: registro.nombre || '',
+      telefono: registro.telefono || '', tipo: registro.tipo || 'General',
+      estado: 'activa', emitidaEn: new Date().toISOString(), usadaEn: null, validadoPor: null
+    };
+    await db.collection('entradas').doc(codigo).set(entradaDoc);
+    return entradaDoc;
+  }
+
+  async function confirmarPago(registro, btnEl){
+    const yaGeneradas = entradasGeneradasPara(registro.id).length;
+    const totalSolicitado = cantidadSolicitada(registro.entradas);
+    if(yaGeneradas >= totalSolicitado){
+      alert('Este registro ya tiene todas sus entradas generadas.');
+      return;
+    }
+    if(btnEl){ btnEl.disabled = true; btnEl.textContent = 'Generando…'; }
+    try{
+      const nuevaEntrada = await generarEntradaParaRegistro(registro);
+      currentEntradas.unshift(nuevaEntrada);
+      refreshStatsAndTable();
+      mostrarModalQR(nuevaEntrada, registro);
+    }catch(err){
+      console.error('Error al generar la entrada', err);
+      alert('No se pudo generar la entrada. Intenta de nuevo.');
+    }finally{
+      if(btnEl){ btnEl.disabled = false; }
+      refreshStatsAndTable();
+    }
+  }
+
+  // ---------- Modal QR ----------
+  const qrOverlay = document.getElementById('qrOverlay');
+  const qrCodeText = document.getElementById('qrCodeText');
+  const qrCanvasWrap = document.getElementById('qrCanvasWrap');
+  const qrDownloadBtn = document.getElementById('qrDownloadBtn');
+  const qrWhatsappBtn = document.getElementById('qrWhatsappBtn');
+  const qrCloseBtn = document.getElementById('qrCloseBtn');
+
+  function mostrarModalQR(entrada, registro){
+    qrCodeText.textContent = entrada.codigo;
+    qrCanvasWrap.innerHTML = '';
+    // El QR SOLO contiene el código/token — nunca nombre, teléfono ni cédula.
+    new QRCode(qrCanvasWrap, {
+      text: entrada.codigo, width: 210, height: 210,
+      colorDark: '#170F2E', colorLight: '#ffffff'
+    });
+
+    function getQrImageEl(){
+      return qrCanvasWrap.querySelector('img') || qrCanvasWrap.querySelector('canvas');
+    }
+    function descargarQR(){
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const img = getQrImageEl();
+          if(!img){ resolve(false); return; }
+          const link = document.createElement('a');
+          link.download = `entrada-${entrada.codigo}.png`;
+          link.href = img.tagName === 'CANVAS' ? img.toDataURL('image/png') : img.src;
+          link.click();
+          resolve(true);
+        }, 150);
+      });
+    }
+    qrDownloadBtn.onclick = () => { descargarQR(); };
+
+    const numero = formatPhoneForWhatsapp(registro.telefono);
+    const mensaje = [
+      `¡Tu entrada para BrukOff Sweet Dreams está confirmada! 🎉`, '',
+      `Código de tu entrada: ${entrada.codigo}`, `Categoría: ${entrada.tipo}`, '',
+      'Te adjunto tu código QR — muéstralo en la entrada del evento junto a tu identificación.',
+      'Guárdalo, es único y personal, no lo compartas.'
+    ].join('\n');
+    const waUrl = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+
+    qrWhatsappBtn.onclick = async () => {
+      qrWhatsappBtn.disabled = true;
+      qrWhatsappBtn.textContent = 'Descargando QR…';
+      const ok = await descargarQR();
+      qrWhatsappBtn.disabled = false;
+      qrWhatsappBtn.textContent = '📲 Enviar';
+      if(!ok){ alert('No se pudo preparar la imagen del QR. Intenta descargarlo con el otro botón.'); return; }
+      window.open(waUrl, '_blank', 'noopener');
+    };
+
+    qrOverlay.style.display = 'flex';
+  }
+  qrCloseBtn.addEventListener('click', () => { qrOverlay.style.display = 'none'; });
+  qrOverlay.addEventListener('click', (e) => { if(e.target === qrOverlay) qrOverlay.style.display = 'none'; });
+
+  // ---------- Carga y estadísticas ----------
+  const filterNombre = document.getElementById('filterNombre');
+  const filterTipo = document.getElementById('filterTipo');
+  const filterEstado = document.getElementById('filterEstado');
+  const filterFecha = document.getElementById('filterFecha');
+  const adminRows = document.getElementById('adminRows');
+  const adminCount = document.getElementById('adminCount');
+
+  async function loadAdminData(){
+    adminCount.textContent = 'Cargando…';
+    try{
+      const [regs, ents] = await Promise.all([getRegistrations(), getEntradas()]);
+      currentRegistrations = regs;
+      currentEntradas = ents;
+      refreshStatsAndTable();
+    }catch(err){
+      adminCount.textContent = 'No se pudieron cargar los registros.';
+    }
+  }
+
+  function refreshStatsAndTable(){ renderStats(); renderFilteredRows(); }
+
+  function renderStats(){
+    const confirmadas = currentEntradas.length; // cada doc en "entradas" = 1 entrada confirmada/emitida
+    let totalMonto = 0;
+    const porTipo = {};
+    let activas = 0, usadas = 0;
+    currentEntradas.forEach(e => {
+      const tipo = e.tipo || 'General';
+      totalMonto += (PRECIOS[tipo] || 0);
+      porTipo[tipo] = (porTipo[tipo] || 0) + 1;
+      if(e.estado === 'usada') usadas++; else activas++;
+    });
+
+    document.getElementById('statEntradas').textContent = confirmadas;
+    document.getElementById('statMonto').textContent = formatColones(totalMonto);
+    document.getElementById('statActivas').textContent = activas;
+    document.getElementById('statUsadas').textContent = usadas;
+
+    const breakdownWrap = document.getElementById('breakdownWrap');
+    const tipos = Object.keys(PRECIOS);
+    breakdownWrap.innerHTML = tipos.map(tipo => {
+      const count = porTipo[tipo] || 0;
+      const pct = confirmadas ? Math.round((count / confirmadas) * 100) : 0;
+      return `<div class="breakdown-row"><span>${escapeHtml(tipo)}</span><div class="bar-bg"><div class="bar-fill" style="width:${pct}%;"></div></div><span>${count}</span></div>`;
+    }).join('');
+  }
+
+  function estadoRegistro(registro){
+    const generadas = entradasGeneradasPara(registro.id).length;
+    const solicitadas = cantidadSolicitada(registro.entradas);
+    if(generadas === 0) return 'pendiente';
+    if(generadas < solicitadas) return 'parcial';
+    return 'confirmado';
+  }
+
+  function estadoLabel(estado){
+    if(estado === 'confirmado') return '✅ Confirmado';
+    if(estado === 'parcial') return '🟡 Parcial';
+    return '⏳ Pendiente';
+  }
+
+  function renderFilteredRows(){
+    const nombreVal = (filterNombre.value || '').trim().toLowerCase();
+    const tipoVal = filterTipo.value;
+    const estadoVal = filterEstado.value;
+    const fechaVal = (filterFecha.value || '').trim();
+
+    const filtered = currentRegistrations.filter(e => {
+      if(nombreVal && !(e.nombre || '').toLowerCase().includes(nombreVal)) return false;
+      if(tipoVal && (e.tipo || 'General') !== tipoVal) return false;
+      if(estadoVal && estadoRegistro(e) !== estadoVal) return false;
+      if(fechaVal){
+        const fechaRegistro = e.ts ? new Date(e.ts).toLocaleDateString('es-CR') : '';
+        if(!fechaRegistro.includes(fechaVal)) return false;
+      }
+      return true;
+    });
+
+    adminRows.innerHTML = filtered.map(e => {
+      const estado = estadoRegistro(e);
+      const generadas = entradasGeneradasPara(e.id).length;
+      const solicitadas = cantidadSolicitada(e.entradas);
+      const faltan = solicitadas - generadas;
+      return `
+      <tr>
+        <td class="name-cell">${escapeHtml(e.nombre||'')}</td>
+        <td><a class="wa-link" href="${buildBuyerWhatsappUrl(e)}" target="_blank" rel="noopener">📲 ${escapeHtml(e.telefono||'')}</a></td>
+        <td>${escapeHtml(e.cedula||'')}</td>
+        <td><span class="type-badge ${escapeHtml(e.tipo||'General')}">${escapeHtml(e.tipo||'General')}</span></td>
+        <td><span class="ticket-badge">${escapeHtml(e.entradas||'')}</span></td>
+        <td><span class="status-badge ${estado}">${estadoLabel(estado)} (${generadas}/${solicitadas})</span></td>
+        <td><span class="ref-code">${escapeHtml(e.referencia||'—')}</span></td>
+        <td class="action-cell">
+          ${faltan > 0 ? `<button type="button" class="confirm-btn" onclick="confirmarPagoDesdeUI('${escapeHtml(e.id)}', this)">✅ Confirmar compra y generar QR</button>` : ''}
+          <button type="button" class="delete-btn" onclick="eliminarRegistro('${escapeHtml(e.id||'')}', this)">🗑️ Borrar</button>
+        </td>
+      </tr>`;
+    }).join('');
+    adminCount.textContent = filtered.length + ' de ' + currentRegistrations.length + ' registro(s) · actualizado ' + new Date().toLocaleTimeString();
+  }
+
+  window.confirmarPagoDesdeUI = function(registroId, btnEl){
+    const registro = currentRegistrations.find(r => r.id === registroId);
+    if(!registro){ alert('No se encontró el registro.'); return; }
+    confirmarPago(registro, btnEl);
+  };
+
+  window.eliminarRegistro = async function(id, btnEl){
+    if(!id){ alert('No se pudo identificar este registro.'); return; }
+    const ok = confirm('¿Seguro que quieres borrar este registro? Esta acción no se puede deshacer.\n\nNota: las entradas/QR ya generados para este registro NO se borran automáticamente.');
+    if(!ok) return;
+    if(btnEl){ btnEl.disabled = true; btnEl.textContent = 'Borrando…'; }
+    try{
+      await db.collection('registros').doc(id).delete();
+      await loadAdminData();
+    }catch(err){
+      console.error('Error al borrar el registro', err);
+      alert('No se pudo borrar el registro. Intenta de nuevo.');
+      if(btnEl){ btnEl.disabled = false; btnEl.textContent = '🗑️ Borrar'; }
+    }
+  };
+
+  filterNombre.addEventListener('input', renderFilteredRows);
+  filterTipo.addEventListener('change', renderFilteredRows);
+  filterEstado.addEventListener('change', renderFilteredRows);
+  filterFecha.addEventListener('input', renderFilteredRows);
+  document.getElementById('refreshAdmin').addEventListener('click', loadAdminData);
+
+  function openAdmin(){
+    loadAdminData();
+    if(pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(loadAdminData, 8000);
+  }
+</script>
+</body>
+</html>
