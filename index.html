@@ -439,6 +439,8 @@
     cursor:pointer; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:5px;
   }
   .qr-modal-actions a.wa-send{ background:rgba(37,211,102,0.14); border-color:rgba(37,211,102,0.4); color:#25D366; }
+  .qr-modal-actions button.wa-send{ background:rgba(37,211,102,0.14); border-color:rgba(37,211,102,0.4); color:#25D366; }
+  .qr-modal-actions button:disabled{ opacity:.6; cursor:default; }
   .qr-close{ margin-top:14px; background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; }
 
   /* ---------- Escáner ---------- */
@@ -636,8 +638,9 @@
         <div id="qrCanvasWrap"></div>
         <div class="qr-modal-actions">
           <button type="button" id="qrDownloadBtn">⬇️ Descargar</button>
-          <a href="#" id="qrWhatsappBtn" target="_blank" rel="noopener" class="wa-send">📲 Enviar</a>
+          <button type="button" id="qrWhatsappBtn" class="wa-send">📲 Enviar</button>
         </div>
+        <p class="hint" style="margin-top:8px;">WhatsApp no permite adjuntar imágenes automáticamente desde un link — al presionar "Enviar" se descarga el QR y se abre el chat; solo debes adjuntar la imagen ya descargada.</p>
         <button type="button" class="qr-close" id="qrCloseBtn">Cerrar</button>
       </div>
     </div>
@@ -925,21 +928,36 @@
       colorLight: '#ffffff'
     });
 
-    qrDownloadBtn.onclick = () => {
-      setTimeout(() => {
-        const img = qrCanvasWrap.querySelector('img') || qrCanvasWrap.querySelector('canvas');
-        const link = document.createElement('a');
-        link.download = `entrada-${entrada.codigo}.png`;
-        link.href = img.tagName === 'CANVAS' ? img.toDataURL('image/png') : img.src;
-        link.click();
-      }, 150);
-    };
+    // Devuelve la imagen del QR ya renderizada (espera a que la librería termine)
+    function getQrImageEl(){
+      return qrCanvasWrap.querySelector('img') || qrCanvasWrap.querySelector('canvas');
+    }
+
+    function descargarQR(){
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const img = getQrImageEl();
+          if(!img){ resolve(false); return; }
+          const link = document.createElement('a');
+          link.download = `entrada-${entrada.codigo}.png`;
+          link.href = img.tagName === 'CANVAS' ? img.toDataURL('image/png') : img.src;
+          link.click();
+          resolve(true);
+        }, 150);
+      });
+    }
+
+    qrDownloadBtn.onclick = () => { descargarQR(); };
 
     // ⚠️ INTEGRACIÓN PENDIENTE: envío automático por WhatsApp/SMS.
-    // Por ahora abrimos un chat de WhatsApp pre-armado con el código de la
-    // entrada para que el organizador lo envíe con un clic (igual que el
-    // aviso de pago). Ver función enviarEntradaPorWhatsAppAPI() más abajo
-    // para la estructura lista para conectar una API real.
+    // Un link wa.me SOLO puede pre-llenar texto — WhatsApp no permite adjuntar
+    // imágenes desde una URL por razones de seguridad/privacidad. Por eso el
+    // flujo real es: 1) descargamos el QR al dispositivo del organizador,
+    // 2) abrimos WhatsApp con el mensaje ya escrito, 3) el organizador adjunta
+    // la imagen manualmente (ya está en su carpeta de Descargas).
+    // Para que el envío sea 100% automático (sin este paso manual) se necesita
+    // la WhatsApp Business Cloud API o Twilio con credenciales de SERVIDOR —
+    // ver la función enviarEntradaPorWhatsAppAPI() más abajo.
     const numero = formatPhoneForWhatsapp(registro.telefono);
     const mensaje = [
       `¡Tu entrada para BrukOff Sweet Dreams está confirmada! 🎉`,
@@ -947,10 +965,23 @@
       `Código de tu entrada: ${entrada.codigo}`,
       `Tipo: ${entrada.tipo}`,
       '',
-      'Te adjuntamos tu código QR — muéstralo en la entrada del evento junto a tu identificación.',
+      'Te adjunto tu código QR — muéstralo en la entrada del evento junto a tu identificación.',
       'Guárdalo, es único y personal, no lo compartas.'
     ].join('\n');
-    qrWhatsappBtn.href = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+    const waUrl = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+
+    qrWhatsappBtn.onclick = async () => {
+      qrWhatsappBtn.disabled = true;
+      qrWhatsappBtn.textContent = 'Descargando QR…';
+      const ok = await descargarQR();
+      qrWhatsappBtn.disabled = false;
+      qrWhatsappBtn.textContent = '📲 Enviar';
+      if(!ok){
+        alert('No se pudo preparar la imagen del QR. Intenta descargarlo con el otro botón.');
+        return;
+      }
+      window.open(waUrl, '_blank', 'noopener');
+    };
 
     qrOverlay.style.display = 'flex';
   }
