@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sweet Dreams — Validar entradas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root{
+    --bg-deep:#120C24; --bg-card:#1D1638; --bg-field:#241C42;
+    --lavender:#A78BFA; --pink:#FF6EC7; --gold:#F5C24D;
+    --text:#F3EFFF; --muted:#9C8FC2; --line:#332A5C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 15% 8%, rgba(255,110,199,0.16), transparent 40%),
+      radial-gradient(circle at 85% 0%, rgba(167,139,250,0.20), transparent 45%),
+      var(--bg-deep);
+    color:var(--text); font-family:'Sora', sans-serif; min-height:100vh; padding:0 0 60px;
+  }
+  header.top{
+    padding:26px 20px 18px; text-align:center;
+    background:linear-gradient(180deg, #1A1338 0%, #120C24 100%);
+    border-bottom:1px solid var(--line);
+  }
+  header.top h1{
+    font-family:'Bebas Neue', sans-serif; font-size:clamp(30px,7vw,42px);
+    letter-spacing:.04em; margin:0;
+    background:linear-gradient(90deg,var(--lavender),var(--pink));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  header.top p{ color:var(--muted); font-size:12.5px; margin:6px 0 0; }
+  header.top a{ color:var(--muted); font-size:12px; text-decoration:underline; }
+
+  .wrap{ max-width:480px; margin:0 auto; padding:18px 18px 0; }
+  .card{
+    background:var(--bg-card); border:1px solid var(--line); border-radius:18px;
+    padding:22px; margin-top:16px; box-shadow:0 20px 50px rgba(0,0,0,.35);
+  }
+  .section-label{
+    display:flex; align-items:center; gap:8px; font-size:12.5px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--gold); font-weight:700; margin-bottom:16px;
+  }
+  label{ display:block; font-size:14px; font-weight:600; margin:12px 0 8px; }
+  input[type="text"], input[type="password"]{
+    width:100%; background:var(--bg-field); border:1px solid var(--line); border-radius:10px;
+    padding:12px 13px; color:var(--text); font-family:'Sora', sans-serif; font-size:14.5px; outline:none;
+  }
+  input:focus{ border-color:var(--lavender); box-shadow:0 0 0 3px rgba(167,139,250,0.18); }
+  .submit-btn{
+    width:100%; margin-top:14px; padding:14px; border:none; border-radius:12px;
+    background:linear-gradient(90deg,var(--lavender),var(--pink)); color:#170F2E;
+    font-family:'Sora', sans-serif; font-weight:700; font-size:15px; cursor:pointer;
+  }
+  .error-text{ color:var(--pink); font-size:12px; margin-top:8px; min-height:14px; }
+
+  .scan-toggle{ display:flex; gap:6px; margin-bottom:12px; }
+  .scan-toggle button{
+    flex:1; padding:9px; border-radius:8px; border:1px solid var(--line);
+    background:var(--bg-field); color:var(--muted); font-size:12px; font-weight:700; cursor:pointer;
+  }
+  .scan-toggle button.active{ border-color:var(--lavender); color:var(--lavender); background:rgba(167,139,250,0.1); }
+  .scan-block{ display:none; }
+  .scan-block.active{ display:block; }
+  #qrReader{ border-radius:12px; overflow:hidden; border:1px solid var(--line); margin-bottom:14px; }
+  .hint{ font-size:12px; color:var(--muted); margin-top:6px; }
+  .manual-check-row{ display:flex; gap:8px; margin-top:6px; }
+  .manual-check-row input{ flex:1; }
+  .manual-check-row button{
+    background:linear-gradient(90deg,var(--lavender),var(--pink)); color:#170F2E;
+    border:none; border-radius:10px; padding:0 16px; font-weight:700; cursor:pointer; font-size:13px;
+  }
+  .scan-result{ margin-top:16px; border-radius:12px; padding:16px; border:1px solid var(--line); display:none; }
+  .scan-result.ok{ background:rgba(80,220,150,0.1); border-color:rgba(80,220,150,0.4); }
+  .scan-result.used{ background:rgba(245,194,77,0.1); border-color:rgba(245,194,77,0.4); }
+  .scan-result.invalid{ background:rgba(255,110,199,0.1); border-color:rgba(255,110,199,0.4); }
+  .scan-result h4{ margin:0 0 8px; font-size:16px; }
+  .scan-result p{ margin:2px 0; font-size:12.5px; color:var(--muted); }
+  .security-note{
+    background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.3); color:var(--muted);
+    border-radius:10px; padding:12px 14px; font-size:12px; line-height:1.6; margin-top:14px;
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Validar entradas</h1>
+  <p>Sweet Dreams · 14 nov 2026 · Bar Zebu · <a href="organizador.html">← Panel organizador</a></p>
+</header>
+
+<div class="wrap">
+
+  <!-- PIN gate -->
+  <div class="card" id="pinGate">
+    <div class="section-label">🔒 Acceso staff de puerta</div>
+    <label style="margin-top:0;">PIN</label>
+    <input type="password" id="pinInput" placeholder="Ingresa el PIN" inputmode="numeric">
+    <div class="error-text" id="pinError"></div>
+    <button type="button" class="submit-btn" id="pinSubmit">Entrar</button>
+    <div class="security-note">
+      El PIN es una barrera básica en el navegador para esta demo. Para varios puntos de entrada con control real
+      de quién validó cada entrada, se recomienda autenticación de servidor (usuarios con login) en vez de un PIN compartido.
+    </div>
+  </div>
+
+  <!-- Panel de escaneo -->
+  <div class="card" id="scanPanel" style="display:none;">
+    <div class="section-label">📷 Validación de entrada</div>
+
+    <div class="scan-toggle">
+      <button type="button" class="scan-block-btn active" data-block="camera">📷 Cámara</button>
+      <button type="button" class="scan-block-btn" data-block="manual">⌨️ Manual</button>
+    </div>
+
+    <div class="scan-block active" id="blockCamera">
+      <div id="qrReader"></div>
+      <div class="hint" id="cameraHint">Presiona "Iniciar cámara" para escanear.</div>
+      <button type="button" class="submit-btn" id="startCameraBtn" style="margin-top:10px;">Iniciar cámara</button>
+      <button type="button" class="submit-btn" id="stopCameraBtn" style="margin-top:10px; display:none; background:var(--bg-field); color:var(--text);">Detener cámara</button>
+    </div>
+
+    <div class="scan-block" id="blockManual">
+      <label style="margin-top:0;">Código de la entrada</label>
+      <div class="manual-check-row">
+        <input type="text" id="manualCode" placeholder="Ej: SDQ-XXXXXXXX">
+        <button type="button" id="manualCheckBtn">Validar</button>
+      </div>
+    </div>
+
+    <div class="scan-result" id="scanResult"></div>
+  </div>
+</div>
+
+<script>
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str == null ? '' : str;
+    return d.innerHTML;
+  }
+
+  // 🔗 Conexión a Firebase (mismo proyecto que index.html y organizador.html)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCxW7bSCZafZ3QydThF_Kln_OS3FD3aQ2Y",
+    authDomain: "sweet-dreams-51493.firebaseapp.com",
+    projectId: "sweet-dreams-51493",
+    storageBucket: "sweet-dreams-51493.firebasestorage.app",
+    messagingSenderId: "609888686575",
+    appId: "1:609888686575:web:af9b844059f79e0ad6661a"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // ---------- PIN ----------
+  const VALIDATOR_PIN = '2026'; // ⚠️ puedes usar un PIN distinto al del panel organizador
+  const pinGate = document.getElementById('pinGate');
+  const pinInput = document.getElementById('pinInput');
+  const pinSubmit = document.getElementById('pinSubmit');
+  const pinError = document.getElementById('pinError');
+  const scanPanel = document.getElementById('scanPanel');
+
+  function checkPin(){
+    if(pinInput.value === VALIDATOR_PIN){
+      pinGate.style.display = 'none';
+      scanPanel.style.display = 'block';
+      sessionStorage.setItem('sd_validator_ok', '1');
+    }else{
+      pinError.textContent = 'PIN incorrecto, intenta de nuevo.';
+    }
+  }
+  pinSubmit.addEventListener('click', checkPin);
+  pinInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') checkPin(); });
+
+  if(sessionStorage.getItem('sd_validator_ok') === '1'){
+    pinGate.style.display = 'none';
+    scanPanel.style.display = 'block';
+  }
+
+  const VALIDADOR_ID = 'staff-' + Math.random().toString(36).slice(2, 7);
+
+  // ---------- Toggle cámara / manual ----------
+  const scanBlockBtns = document.querySelectorAll('.scan-block-btn');
+  scanBlockBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      scanBlockBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('blockCamera').classList.remove('active');
+      document.getElementById('blockManual').classList.remove('active');
+      if(btn.dataset.block === 'camera'){
+        document.getElementById('blockCamera').classList.add('active');
+      }else{
+        document.getElementById('blockManual').classList.add('active');
+        stopCamera();
+      }
+    });
+  });
+
+  let html5QrCode = null;
+  let cameraRunning = false;
+  const startCameraBtn = document.getElementById('startCameraBtn');
+  const stopCameraBtn = document.getElementById('stopCameraBtn');
+  const cameraHint = document.getElementById('cameraHint');
+
+  async function startCamera(){
+    try{
+      html5QrCode = new Html5Qrcode('qrReader');
+      await html5QrCode.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: 240 },
+        (decodedText) => { validarEntrada(decodedText.trim()); },
+        () => { /* frame sin QR detectado, se ignora */ }
+      );
+      cameraRunning = true;
+      startCameraBtn.style.display = 'none';
+      stopCameraBtn.style.display = 'block';
+      cameraHint.textContent = 'Apunta la cámara al código QR de la entrada.';
+    }catch(err){
+      console.error('Error al iniciar la cámara', err);
+      cameraHint.textContent = 'No se pudo acceder a la cámara. Verifica los permisos del navegador o usa la opción manual.';
+    }
+  }
+  async function stopCamera(){
+    if(html5QrCode && cameraRunning){
+      try{ await html5QrCode.stop(); await html5QrCode.clear(); }catch(err){ /* ya estaba detenida */ }
+    }
+    cameraRunning = false;
+    startCameraBtn.style.display = 'block';
+    stopCameraBtn.style.display = 'none';
+  }
+  startCameraBtn.addEventListener('click', startCamera);
+  stopCameraBtn.addEventListener('click', stopCamera);
+
+  document.getElementById('manualCheckBtn').addEventListener('click', () => {
+    const code = document.getElementById('manualCode').value.trim();
+    if(!code){ alert('Escribe o pega el código de la entrada.'); return; }
+    validarEntrada(code);
+  });
+
+  const scanResult = document.getElementById('scanResult');
+  function mostrarResultadoScan(tipo, html){
+    scanResult.className = 'scan-result ' + tipo;
+    scanResult.innerHTML = html;
+    scanResult.style.display = 'block';
+  }
+
+  // Evita doble-clics/escaneos duplicados casi simultáneos del mismo código
+  let ultimoCodigoProcesado = null;
+  let procesando = false;
+
+  // Valida una entrada de forma ATÓMICA con una transacción de Firestore:
+  // lee el estado y lo cambia a "usada" dentro de la MISMA transacción, así
+  // que si dos dispositivos escanean el mismo QR al mismo tiempo, Firestore
+  // garantiza que solo uno de los dos gane la carrera y marque la entrada
+  // como usada; el otro recibirá "ya_usada".
+  async function validarEntrada(codigo){
+    codigo = (codigo || '').trim();
+    if(!codigo || procesando) return;
+    procesando = true;
+    mostrarResultadoScan('used', '<p>Verificando código…</p>');
+
+    const ref = db.collection('entradas').doc(codigo);
+    try{
+      const resultado = await db.runTransaction(async (tx) => {
+        const doc = await tx.get(ref);
+        if(!doc.exists){ return { estado: 'invalido' }; }
+        const data = doc.data();
+        if(data.estado === 'usada'){ return { estado: 'ya_usada', data }; }
+        tx.update(ref, {
+          estado: 'usada',
+          usadaEn: new Date().toISOString(),
+          validadoPor: VALIDADOR_ID
+        });
+        return { estado: 'valida', data };
+      });
+
+      if(resultado.estado === 'invalido'){
+        mostrarResultadoScan('invalid', `
+          <h4>❌ Código inválido</h4>
+          <p>Este código no corresponde a ninguna entrada registrada, fue alterado o no existe. Acceso denegado.</p>
+        `);
+      }else if(resultado.estado === 'ya_usada'){
+        const fecha = resultado.data.usadaEn ? new Date(resultado.data.usadaEn).toLocaleString('es-CR') : '—';
+        mostrarResultadoScan('used', `
+          <h4>⚠️ Entrada ya utilizada / inactiva</h4>
+          <p><strong>Nombre:</strong> ${escapeHtml(resultado.data.nombre||'—')}</p>
+          <p><strong>Categoría:</strong> ${escapeHtml(resultado.data.tipo||'—')}</p>
+          <p><strong>Usada el:</strong> ${fecha}</p>
+          <p>Acceso denegado — este QR ya fue usado anteriormente.</p>
+        `);
+      }else{
+        mostrarResultadoScan('ok', `
+          <h4>✅ Entrada válida — acceso permitido</h4>
+          <p><strong>Nombre:</strong> ${escapeHtml(resultado.data.nombre||'—')}</p>
+          <p><strong>Categoría:</strong> ${escapeHtml(resultado.data.tipo||'—')}</p>
+          <p>Marcada como usada ahora mismo. Ya no podrá volver a ingresar con este código.</p>
+        `);
+      }
+      document.getElementById('manualCode').value = '';
+    }catch(err){
+      console.error('Error al validar la entrada', err);
+      mostrarResultadoScan('invalid', `<h4>❌ Error al validar</h4><p>No se pudo verificar el código. Intenta de nuevo.</p>`);
+    }finally{
+      procesando = false;
+    }
+  }
+</script>
+</body>
+</html>
