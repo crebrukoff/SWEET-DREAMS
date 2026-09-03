@@ -272,7 +272,7 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  const ADMIN_PIN_HASH = 'cd746dd1eb9404a57fb0ad94ca374d8b4d8d0ad5a163baf47b61b4799e425b21'; // PIN actual: ZEBU-SD2026-14NOV
+  const ADMIN_PIN_HASH = 'cd746dd1eb9404a57fb0ad94ca374d8b4d8d0ad5a163baf47b61b4799e425b21'; 
 
   async function sha256Hex(texto){
     const datos = new TextEncoder().encode(texto);
@@ -305,8 +305,14 @@
   pinSubmit.addEventListener('click', checkPin);
   pinInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') checkPin(); });
 
+  // PRECIOS: precio que se muestra al comprador en el mensaje de WhatsApp.
+  //   General es por entrada. VIP es el paquete completo (cubre hasta 5 personas).
   const PRECIOS = { General: 3000, VIP: 100000 };
-  const SINPE_NUMERO = '71344131';
+  // PRECIO_POR_ENTRADA: lo que suma CADA QR individual a las estadísticas de recaudado.
+  //   General: 3.000 por QR (igual al precio). VIP: 20.000 por QR (100.000 / 5 personas),
+  //   así que al generar las 5 entradas del paquete VIP, el recaudado suma exactamente 100.000.
+  const PRECIO_POR_ENTRADA = { General: 3000, VIP: 20000 };
+  const SINPE_NUMERO = '85846332';
 
   let currentRegistrations = [];
   let currentEntradas = [];
@@ -325,14 +331,22 @@
     const tipo = entry.tipo === 'VIP' ? 'VIP' : 'General';
     const precio = PRECIOS[tipo];
     const cantidadNum = entry.entradas === '5+' ? 5 : (parseInt(entry.entradas, 10) || 1);
-    const total = precio * cantidadNum;
-    const totalTexto = entry.entradas === '5+' ? `${formatColones(total)}+ (a confirmar cantidad exacta)` : formatColones(total);
+    // VIP es un paquete de precio fijo (₡100.000, hasta 5 personas), no se multiplica por cantidad.
+    const total = tipo === 'VIP' ? precio : precio * cantidadNum;
+    const totalTexto = (tipo !== 'VIP' && entry.entradas === '5+')
+      ? `${formatColones(total)}+ (a confirmar cantidad exacta)`
+      : formatColones(total);
     const posesivo = cantidadNum === 1 ? 'tu' : 'tus';
     const entradasLabel = entry.entradas === '1' ? '1 entrada' : `${entry.entradas} entradas`;
+
+    const lineasPrecio = tipo === 'VIP'
+      ? [`-Tipo de entrada: VIP (paquete hasta 5 personas)`, `-Precio del paquete: ${formatColones(precio)}`]
+      : [`-Tipo de entrada: ${tipo}`, `-Precio por entrada: ${formatColones(precio)}`];
+
     const lineas = [
       '¡Hola!', 'Te escribo por tu registro para BrukOff Sweet Dreams.', '',
       `Quiero confirmar la compra de ${posesivo} ${entradasLabel}:`,
-      `-Tipo de entrada: ${tipo}`, `-Precio por entrada: ${formatColones(precio)}`,
+      ...lineasPrecio,
       `-Total: ${totalTexto}`, `-Número de referencia: ${entry.referencia || '—'}`, '',
       `Para realizar el pago, el número de SINPE es: ${SINPE_NUMERO}. *Por favor agrega el número de referencia en el detalle del SINPE.*`, '',
       'Cuando lo realices, te pido por favor que me envíes el comprobante de pago. ', '', '¡Muchas gracias! '
@@ -487,7 +501,7 @@
     let activas = 0, usadas = 0;
     currentEntradas.forEach(e => {
       const tipo = e.tipo || 'General';
-      totalMonto += (PRECIOS[tipo] || 0);
+      totalMonto += (PRECIO_POR_ENTRADA[tipo] || 0);
       porTipo[tipo] = (porTipo[tipo] || 0) + 1;
       if(e.estado === 'usada') usadas++; else activas++;
     });
