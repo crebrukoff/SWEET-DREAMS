@@ -239,11 +239,6 @@
     telefonoInput.value = telefonoInput.value.replace(/\D/g, '').slice(0, 8);
   });
 
-  // El VIP es un paquete fijo de 5 personas: cuando se elige VIP, ocultamos
-  // la pregunta de "cuántas entradas" (no aplica, ya son 5 por definición)
-  // y la reemplazamos por una nota. Internamente seguimos guardando
-  // entradas="5+" para reusar toda la lógica que ya existe en el panel del
-  // organizador (que genera 5 códigos QR individuales para el paquete).
   const ticketSection = document.getElementById('ticketSection');
   const vipNote = document.getElementById('vipNote');
   const entradaRadios = document.querySelectorAll('input[name="entradas"]');
@@ -255,12 +250,10 @@
     if(esVip){
       ticketSection.style.display = 'none';
       vipNote.style.display = 'block';
-      if(fiveRadio) fiveRadio.checked = true; // fija "5 entradas" para el paquete VIP
+      if(fiveRadio) fiveRadio.checked = true;
     }else{
       ticketSection.style.display = 'block';
       vipNote.style.display = 'none';
-      // Si venía de VIP, no dejamos "5 entradas" preseleccionado para General
-      // — que la persona elija activamente cuántas quiere.
       entradaRadios.forEach(r => { r.checked = false; });
     }
   }
@@ -274,7 +267,6 @@
     return d.innerHTML;
   }
 
-  // 🔗 Conexión a Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCxW7bSCZafZ3QydThF_Kln_OS3FD3aQ2Y",
     authDomain: "sweet-dreams-51493.firebaseapp.com",
