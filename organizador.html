@@ -5,24 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sweet Dreams — Panel organizador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{
-    --bg-deep:#120C24; --bg-card:#1D1638; --bg-field:#241C42;
-    --lavender:#A78BFA; --pink:#FF6EC7; --gold:#F5C24D;
-    --text:#F3EFFF; --muted:#9C8FC2; --line:#332A5C;
+    --bg-deep:#0B1440; --bg-card:#12205C; --bg-field:#1B2C78;
+    --lavender:#3355FF; --pink:#F4ECD8; --gold:#EFE3C0;
+    --text:#F4ECD8; --muted:#9FB0E8; --line:#28399E;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
     background:
-      radial-gradient(circle at 15% 8%, rgba(255,110,199,0.16), transparent 40%),
-      radial-gradient(circle at 85% 0%, rgba(167,139,250,0.20), transparent 45%),
+      radial-gradient(circle at 15% 8%, rgba(244,236,216,0.16), transparent 40%),
+      radial-gradient(circle at 85% 0%, rgba(51,85,255,0.20), transparent 45%),
       var(--bg-deep);
-    color:var(--text); font-family:'Sora', sans-serif; min-height:100vh; padding:0 0 60px;
+    color:var(--text); font-family:'Poppins', sans-serif; min-height:100vh; padding:0 0 60px;
   }
   header.top{
     padding:26px 20px 18px; text-align:center;
@@ -32,8 +32,7 @@
   header.top h1{
     font-family:'Bebas Neue', sans-serif; font-size:clamp(30px,7vw,42px);
     letter-spacing:.04em; margin:0;
-    background:linear-gradient(90deg,var(--lavender),var(--pink));
-    -webkit-background-clip:text; background-clip:text; color:transparent;
+    color:var(--text);
   }
   header.top p{ color:var(--muted); font-size:12.5px; margin:6px 0 0; }
   header.top a.back{ color:var(--muted); font-size:12px; text-decoration:underline; }
@@ -50,13 +49,13 @@
   label{ display:block; font-size:14px; font-weight:600; margin:12px 0 8px; }
   input[type="text"], input[type="password"]{
     width:100%; background:var(--bg-field); border:1px solid var(--line); border-radius:10px;
-    padding:12px 13px; color:var(--text); font-family:'Sora', sans-serif; font-size:14.5px; outline:none;
+    padding:12px 13px; color:var(--text); font-family:'Poppins', sans-serif; font-size:14.5px; outline:none;
   }
-  input:focus{ border-color:var(--lavender); box-shadow:0 0 0 3px rgba(167,139,250,0.18); }
+  input:focus{ border-color:var(--lavender); box-shadow:0 0 0 3px rgba(51,85,255,0.18); }
   .submit-btn{
     width:100%; margin-top:14px; padding:14px; border:none; border-radius:12px;
-    background:linear-gradient(90deg,var(--lavender),var(--pink)); color:#170F2E;
-    font-family:'Sora', sans-serif; font-weight:700; font-size:15px; cursor:pointer;
+    background:var(--text); color:var(--bg-deep);
+    font-family:'Poppins', sans-serif; font-weight:700; font-size:15px; cursor:pointer;
   }
   .error-text{ color:var(--pink); font-size:12px; margin-top:8px; min-height:14px; }
 
@@ -69,54 +68,54 @@
   .stat-card.tickets .stat-value{ color:var(--lavender); }
   .breakdown-row{ display:flex; justify-content:space-between; align-items:center; font-size:12.5px; padding:5px 0; }
   .breakdown-row .bar-bg{ flex:1; height:6px; background:var(--bg-deep); border-radius:99px; margin:0 8px; overflow:hidden; }
-  .breakdown-row .bar-fill{ height:100%; border-radius:99px; background:linear-gradient(90deg,var(--lavender),var(--pink)); }
+  .breakdown-row .bar-fill{ height:100%; border-radius:99px; background:var(--lavender); }
 
   /* Filtros */
   .filters-row{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
   .filters-row select, .filters-row input{
     flex:1; min-width:140px; background:var(--bg-field); border:1px solid var(--line); color:var(--text);
-    font-family:'Sora', sans-serif; font-size:12.5px; padding:9px 10px; border-radius:8px; outline:none;
+    font-family:'Poppins', sans-serif; font-size:12.5px; padding:9px 10px; border-radius:8px; outline:none;
   }
 
   /* Tabla */
   .admin-table-wrap{ overflow-x:auto; border-radius:10px; }
   table{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
   thead th{
-    text-align:left; padding:10px 10px; background:rgba(245,194,77,0.08); color:var(--gold);
+    text-align:left; padding:10px 10px; background:rgba(239,227,192,0.08); color:var(--gold);
     font-weight:700; font-size:11px; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap;
   }
   thead th:first-child{ border-radius:8px 0 0 8px; }
   thead th:last-child{ border-radius:0 8px 8px 0; }
   td{ padding:11px 10px; border-bottom:1px solid var(--line); vertical-align:middle; color:var(--text); }
   tbody tr:nth-child(even) td{ background:rgba(255,255,255,0.025); }
-  tbody tr:hover td{ background:rgba(167,139,250,0.06); }
+  tbody tr:hover td{ background:rgba(51,85,255,0.06); }
   tbody tr:last-child td{ border-bottom:none; }
   .name-cell{ font-weight:600; }
   .wa-link{ display:inline-flex; align-items:center; gap:5px; color:#25D366; text-decoration:none; font-weight:700; white-space:nowrap; }
   .wa-link:hover{ text-decoration:underline; }
-  .ticket-badge{ display:inline-block; background:rgba(167,139,250,0.15); color:var(--lavender); padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:700; }
+  .ticket-badge{ display:inline-block; background:rgba(51,85,255,0.15); color:var(--lavender); padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:700; }
   .admin-count{ font-size:12px; color:var(--muted); margin-bottom:10px; }
   .type-badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; }
-  .type-badge.General{ background:rgba(167,139,250,0.15); color:var(--lavender); }
-  .type-badge.VIP{ background:rgba(245,194,77,0.18); color:var(--gold); }
+  .type-badge.General{ background:rgba(51,85,255,0.15); color:var(--lavender); }
+  .type-badge.VIP{ background:rgba(239,227,192,0.18); color:var(--gold); }
   .ref-code{ font-family:monospace; font-size:11.5px; color:var(--muted); }
   .delete-btn{
-    background:rgba(255,110,199,0.1); border:1px solid rgba(255,110,199,0.4); color:var(--pink);
+    background:rgba(244,236,216,0.1); border:1px solid rgba(244,236,216,0.4); color:var(--pink);
     border-radius:8px; padding:6px 10px; font-size:11.5px; font-weight:700; cursor:pointer; white-space:nowrap;
   }
-  .delete-btn:hover{ background:rgba(255,110,199,0.22); }
+  .delete-btn:hover{ background:rgba(244,236,216,0.22); }
   .delete-btn:disabled{ opacity:.5; cursor:default; }
   .confirm-btn{
-    background:rgba(167,139,250,0.14); border:1px solid rgba(167,139,250,0.45); color:var(--lavender);
+    background:rgba(51,85,255,0.14); border:1px solid rgba(51,85,255,0.45); color:var(--lavender);
     border-radius:8px; padding:6px 10px; font-size:11.5px; font-weight:700; cursor:pointer; white-space:nowrap; margin-right:6px;
   }
-  .confirm-btn:hover{ background:rgba(167,139,250,0.26); }
+  .confirm-btn:hover{ background:rgba(51,85,255,0.26); }
   .confirm-btn:disabled{ opacity:.5; cursor:default; }
   .action-cell{ display:flex; gap:6px; flex-wrap:wrap; }
   .status-badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
   .status-badge.pendiente{ background:rgba(156,143,194,0.18); color:var(--muted); }
   .status-badge.confirmado{ background:rgba(80,220,150,0.15); color:#4ADE80; }
-  .status-badge.parcial{ background:rgba(245,194,77,0.15); color:var(--gold); }
+  .status-badge.parcial{ background:rgba(239,227,192,0.15); color:var(--gold); }
 
   .top-actions{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:4px; }
   .ghost-btn{
@@ -140,7 +139,7 @@
   .qr-close{ margin-top:14px; background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; }
 
   .security-note{
-    background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.3); color:var(--muted);
+    background:rgba(51,85,255,0.08); border:1px solid rgba(51,85,255,0.3); color:var(--muted);
     border-radius:10px; padding:12px 14px; font-size:12px; line-height:1.6; margin-top:14px;
   }
 </style>
@@ -158,11 +157,14 @@
   <div class="card" id="pinGate">
     <div class="section-label">🔒 Acceso organizador</div>
     <label style="margin-top:0;">PIN</label>
-    <input type="password" id="pinInput" placeholder="Ingresa el PIN" inputmode="numeric">
+    <input type="password" id="pinInput" placeholder="Ingresa el PIN" autocomplete="off">
     <div class="error-text" id="pinError"></div>
     <button type="button" class="submit-btn" id="pinSubmit">Entrar</button>
     <div class="security-note">
-      Este PIN es una protección básica en el navegador, pensada para un evento pequeño.
+      El PIN no está escrito en el código (se guarda como un hash, no en texto plano), así que no se puede leer
+      abriendo "ver código fuente" de la página. Aun así, esto es una protección del navegador, no del servidor:
+      alguien con conocimientos técnicos podría intentar adivinarlo. Para un evento con datos más sensibles,
+      lo ideal sigue siendo una autenticación real de servidor.
     </div>
   </div>
 
@@ -172,7 +174,7 @@
     <div class="card">
       <div class="top-actions">
         <div class="section-label" style="margin-bottom:0;">📊 Resumen</div>
-        <div style="display:flex; gap:8px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <a class="ghost-btn" href="validar.html" target="_blank">📷 Ir a validar entradas</a>
           <button type="button" class="ghost-btn" id="refreshAdmin">🔄 Actualizar</button>
         </div>
@@ -267,24 +269,45 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // ---------- PIN ----------
-  // ⚠️ Cambia este PIN. Recuerda: es una barrera básica en el cliente, no una
-  // autenticación de servidor real (ver nota de seguridad en la página).
-  const ADMIN_PIN = '2026';
+  // ---------- PIN protegido con hash ----------
+  // El PIN real NO está en este archivo — solo su hash SHA-256. Así, quien
+  // abra "ver código fuente" no puede leer el PIN directamente.
+  //
+  // Para cambiar el PIN: abre la consola del navegador (F12 → Console) en
+  // cualquier página y pega esto, cambiando 'TU-PIN-NUEVO' por el que quieras:
+  //
+  //   crypto.subtle.digest('SHA-256', new TextEncoder().encode('TU-PIN-NUEVO'))
+  //     .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
+  //
+  // Copia el resultado (64 caracteres) y reemplázalo abajo en ADMIN_PIN_HASH.
+  const ADMIN_PIN_HASH = 'cd746dd1eb9404a57fb0ad94ca374d8b4d8d0ad5a163baf47b61b4799e425b21'; // PIN actual: ZEBU-SD2026-14NOV
+
+  async function sha256Hex(texto){
+    const datos = new TextEncoder().encode(texto);
+    const buffer = await crypto.subtle.digest('SHA-256', datos);
+    return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
   const pinGate = document.getElementById('pinGate');
   const pinInput = document.getElementById('pinInput');
   const pinSubmit = document.getElementById('pinSubmit');
   const pinError = document.getElementById('pinError');
   const adminPanel = document.getElementById('adminPanel');
 
-  function checkPin(){
-    if(pinInput.value === ADMIN_PIN){
-      pinGate.style.display = 'none';
-      adminPanel.style.display = 'block';
-      sessionStorage.setItem('sd_admin_ok', '1');
-      openAdmin();
-    }else{
-      pinError.textContent = 'PIN incorrecto, intenta de nuevo.';
+  async function checkPin(){
+    pinSubmit.disabled = true;
+    try{
+      const hash = await sha256Hex(pinInput.value);
+      if(hash === ADMIN_PIN_HASH){
+        pinGate.style.display = 'none';
+        adminPanel.style.display = 'block';
+        sessionStorage.setItem('sd_admin_ok', '1');
+        openAdmin();
+      }else{
+        pinError.textContent = 'PIN incorrecto, intenta de nuevo.';
+      }
+    }finally{
+      pinSubmit.disabled = false;
     }
   }
   pinSubmit.addEventListener('click', checkPin);
@@ -304,8 +327,6 @@
   let currentRegistrations = [];
   let currentEntradas = [];
   let pollTimer = null;
-
-  const VALIDADOR_ID = 'organizador-' + Math.random().toString(36).slice(2, 7);
 
   function formatColones(num){ return '₡' + num.toLocaleString('es-CR'); }
 
@@ -348,17 +369,6 @@
     }catch(err){ console.error('Error al leer entradas', err); return []; }
   }
 
-  // Genera un identificador único e impredecible para la entrada.
-  // No contiene datos personales — es solo un token aleatorio.
-  function generarCodigoEntrada(){
-    if(window.crypto && crypto.randomUUID){
-      return 'SDQ-' + crypto.randomUUID().replace(/-/g,'').toUpperCase().slice(0,16);
-    }
-    const bytes = new Uint8Array(12);
-    (window.crypto || {}).getRandomValues ? crypto.getRandomValues(bytes) : bytes.forEach((_,i)=>bytes[i]=Math.floor(Math.random()*256));
-    return 'SDQ-' + Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
-  }
-
   function entradasGeneradasPara(registroId){
     return currentEntradas.filter(e => e.registroId === registroId);
   }
@@ -366,9 +376,18 @@
     return entradasStr === '5+' ? 5 : (parseInt(entradasStr, 10) || 1);
   }
 
+  // Genera un identificador único e impredecible para la entrada.
+  // No contiene datos personales — es solo un token aleatorio.
+  function generarCodigoEntrada(){
+    if(window.crypto && crypto.randomUUID){
+      return 'SDQ-' + crypto.randomUUID().replace(/-/g,'').toUpperCase().slice(0,16);
+    }
+    const bytes = new Uint8Array(12);
+    crypto.getRandomValues(bytes);
+    return 'SDQ-' + Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+  }
+
   // Crea UNA entrada individual con token único para un registro.
-  // El documento vive en la colección "entradas", separada de "registros",
-  // e identificada por el propio código (imposible que se duplique sin fallar).
   async function generarEntradaParaRegistro(registro){
     const codigo = generarCodigoEntrada();
     const entradaDoc = {
@@ -571,11 +590,20 @@
 
   window.eliminarRegistro = async function(id, btnEl){
     if(!id){ alert('No se pudo identificar este registro.'); return; }
-    const ok = confirm('¿Seguro que quieres borrar este registro? Esta acción no se puede deshacer.\n\nNota: las entradas/QR ya generados para este registro NO se borran automáticamente.');
+    const ok = confirm('¿Seguro que quieres borrar este registro? Esto también borrará las entradas/QR ya generados para él. Esta acción no se puede deshacer.');
     if(!ok) return;
     if(btnEl){ btnEl.disabled = true; btnEl.textContent = 'Borrando…'; }
     try{
-      await db.collection('registros').doc(id).delete();
+      // 1) Buscar todas las entradas (QR) que pertenecen a este registro
+      const entradasSnap = await db.collection('entradas').where('registroId', '==', id).get();
+
+      // 2) Borrar registro + todas sus entradas en un solo batch atómico,
+      //    así no queda ninguna entrada "huérfana" en la base de datos.
+      const batch = db.batch();
+      batch.delete(db.collection('registros').doc(id));
+      entradasSnap.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+
       await loadAdminData();
     }catch(err){
       console.error('Error al borrar el registro', err);
