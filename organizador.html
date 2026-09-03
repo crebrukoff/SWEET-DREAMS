@@ -264,7 +264,6 @@
     return d.innerHTML;
   }
 
-  // 🔗 Conexión a Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCxW7bSCZafZ3QydThF_Kln_OS3FD3aQ2Y",
     authDomain: "sweet-dreams-51493.firebaseapp.com",
@@ -276,17 +275,6 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // ---------- PIN protegido con hash ----------
-  // El PIN real NO está en este archivo — solo su hash SHA-256. Así, quien
-  // abra "ver código fuente" no puede leer el PIN directamente.
-  //
-  // Para cambiar el PIN: abre la consola del navegador (F12 → Console) en
-  // cualquier página y pega esto, cambiando 'TU-PIN-NUEVO' por el que quieras:
-  //
-  //   crypto.subtle.digest('SHA-256', new TextEncoder().encode('TU-PIN-NUEVO'))
-  //     .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
-  //
-  // Copia el resultado (64 caracteres) y reemplázalo abajo en ADMIN_PIN_HASH.
   const ADMIN_PIN_HASH = 'cd746dd1eb9404a57fb0ad94ca374d8b4d8d0ad5a163baf47b61b4799e425b21'; // PIN actual: ZEBU-SD2026-14NOV
 
   async function sha256Hex(texto){
@@ -320,16 +308,14 @@
   pinSubmit.addEventListener('click', checkPin);
   pinInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') checkPin(); });
 
-  // Si ya se autenticó en esta pestaña/sesión, no pedir PIN de nuevo
   if(sessionStorage.getItem('sd_admin_ok') === '1'){
     pinGate.style.display = 'none';
     adminPanel.style.display = 'block';
     openAdmin();
   }
 
-  // ---------- Datos ----------
   const PRECIOS = { General: 3000, VIP: 100000 };
-  const SINPE_NUMERO = '71344131'; // 🔗 Número de SINPE Móvil para recibir pagos
+  const SINPE_NUMERO = '71344131';
 
   let currentRegistrations = [];
   let currentEntradas = [];
@@ -383,8 +369,6 @@
     return entradasStr === '5+' ? 5 : (parseInt(entradasStr, 10) || 1);
   }
 
-  // Genera un identificador único e impredecible para la entrada.
-  // No contiene datos personales — es solo un token aleatorio.
   function generarCodigoEntrada(){
     if(window.crypto && crypto.randomUUID){
       return 'SDQ-' + crypto.randomUUID().replace(/-/g,'').toUpperCase().slice(0,16);
@@ -394,7 +378,6 @@
     return 'SDQ-' + Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
   }
 
-  // Crea UNA entrada individual con token único para un registro.
   async function generarEntradaParaRegistro(registro){
     const codigo = generarCodigoEntrada();
     const entradaDoc = {
@@ -428,7 +411,6 @@
     }
   }
 
-  // ---------- Modal QR ----------
   const qrOverlay = document.getElementById('qrOverlay');
   const qrCodeText = document.getElementById('qrCodeText');
   const qrCanvasWrap = document.getElementById('qrCanvasWrap');
@@ -439,7 +421,6 @@
   function mostrarModalQR(entrada, registro){
     qrCodeText.textContent = entrada.codigo;
     qrCanvasWrap.innerHTML = '';
-    // El QR SOLO contiene el código/token — nunca nombre, teléfono ni cédula.
     new QRCode(qrCanvasWrap, {
       text: entrada.codigo, width: 210, height: 210,
       colorDark: '#170F2E', colorLight: '#ffffff'
@@ -487,7 +468,6 @@
   qrCloseBtn.addEventListener('click', () => { qrOverlay.style.display = 'none'; });
   qrOverlay.addEventListener('click', (e) => { if(e.target === qrOverlay) qrOverlay.style.display = 'none'; });
 
-  // ---------- Carga y estadísticas ----------
   const filterNombre = document.getElementById('filterNombre');
   const filterTipo = document.getElementById('filterTipo');
   const filterEstado = document.getElementById('filterEstado');
@@ -510,7 +490,7 @@
   function refreshStatsAndTable(){ renderStats(); renderFilteredRows(); }
 
   function renderStats(){
-    const confirmadas = currentEntradas.length; // cada doc en "entradas" = 1 entrada confirmada/emitida
+    const confirmadas = currentEntradas.length;
     let totalMonto = 0;
     const porTipo = {};
     let activas = 0, usadas = 0;
@@ -601,11 +581,8 @@
     if(!ok) return;
     if(btnEl){ btnEl.disabled = true; btnEl.textContent = 'Borrando…'; }
     try{
-      // 1) Buscar todas las entradas (QR) que pertenecen a este registro
       const entradasSnap = await db.collection('entradas').where('registroId', '==', id).get();
 
-      // 2) Borrar registro + todas sus entradas en un solo batch atómico,
-      //    así no queda ninguna entrada "huérfana" en la base de datos.
       const batch = db.batch();
       batch.delete(db.collection('registros').doc(id));
       entradasSnap.forEach(doc => batch.delete(doc.ref));
@@ -625,11 +602,6 @@
   filterFecha.addEventListener('input', renderFilteredRows);
   document.getElementById('refreshAdmin').addEventListener('click', loadAdminData);
 
-  // Limpieza de datos: borra entradas/QR que quedaron "huérfanos" porque su
-  // registro fue borrado con una versión anterior (que no borraba en
-  // cascada). Compara cada entrada contra la lista actual de registros; si
-  // su registroId ya no existe, la elimina. Es seguro correrlo varias
-  // veces — si no encuentra huérfanas, simplemente no hace nada.
   const cleanupBtn = document.getElementById('cleanupBtn');
   cleanupBtn.addEventListener('click', async () => {
     const idsDeRegistrosActuales = new Set(currentRegistrations.map(r => r.id));
@@ -651,8 +623,6 @@
     cleanupBtn.disabled = true;
     cleanupBtn.textContent = 'Limpiando…';
     try{
-      // Firestore permite hasta 500 operaciones por batch; para un evento
-      // normal esto sobra, pero por si acaso lo partimos en bloques de 400.
       const bloques = [];
       for(let i = 0; i < huerfanas.length; i += 400){
         bloques.push(huerfanas.slice(i, i + 400));
