@@ -308,12 +308,6 @@
   pinSubmit.addEventListener('click', checkPin);
   pinInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') checkPin(); });
 
-  if(sessionStorage.getItem('sd_admin_ok') === '1'){
-    pinGate.style.display = 'none';
-    adminPanel.style.display = 'block';
-    openAdmin();
-  }
-
   const PRECIOS = { General: 3000, VIP: 100000 };
   const SINPE_NUMERO = '71344131';
 
@@ -648,6 +642,14 @@
     if(pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(loadAdminData, 8000);
   }
+
+  
+  if(sessionStorage.getItem('sd_admin_ok') === '1'){
+    pinGate.style.display = 'none';
+    adminPanel.style.display = 'block';
+    openAdmin();
+  }
+
 </script>
 </body>
 </html>
