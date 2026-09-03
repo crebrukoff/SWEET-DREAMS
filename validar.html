@@ -144,7 +144,6 @@
     return d.innerHTML;
   }
 
-  // 🔗 Conexión a Firebase (mismo proyecto que index.html y organizador.html)
   const firebaseConfig = {
     apiKey: "AIzaSyCxW7bSCZafZ3QydThF_Kln_OS3FD3aQ2Y",
     authDomain: "sweet-dreams-51493.firebaseapp.com",
@@ -156,11 +155,6 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // ---------- PIN protegido con hash ----------
-  // Mismo mecanismo que organizador.html: el PIN real no está en el
-  // código, solo su hash SHA-256. Puedes usar un PIN distinto al del
-  // panel organizador si quieres — solo calcula su hash (ver instrucciones
-  // en organizador.html) y pégalo abajo.
   const VALIDATOR_PIN_HASH = '4a19dcaf87884d399007eb3a9e211907f254ec1a8a4794de2218d563a516b796'; // PIN actual: ZEBU-STAFF-PUERTA26
 
   async function sha256Hex(texto){
@@ -200,7 +194,6 @@
 
   const VALIDADOR_ID = 'staff-' + Math.random().toString(36).slice(2, 7);
 
-  // ---------- Toggle cámara / manual ----------
   const scanBlockBtns = document.querySelectorAll('.scan-block-btn');
   scanBlockBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -265,14 +258,8 @@
     scanResult.style.display = 'block';
   }
 
-  // Evita doble-clics/escaneos duplicados casi simultáneos del mismo código
   let procesando = false;
 
-  // Valida una entrada de forma ATÓMICA con una transacción de Firestore:
-  // lee el estado y lo cambia a "usada" dentro de la MISMA transacción, así
-  // que si dos dispositivos escanean el mismo QR al mismo tiempo, Firestore
-  // garantiza que solo uno de los dos gane la carrera y marque la entrada
-  // como usada; el otro recibirá "ya_usada".
   async function validarEntrada(codigo){
     codigo = (codigo || '').trim();
     if(!codigo || procesando) return;
