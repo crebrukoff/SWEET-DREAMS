@@ -5,24 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sweet Dreams — Validar entradas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
   :root{
-    --bg-deep:#120C24; --bg-card:#1D1638; --bg-field:#241C42;
-    --lavender:#A78BFA; --pink:#FF6EC7; --gold:#F5C24D;
-    --text:#F3EFFF; --muted:#9C8FC2; --line:#332A5C;
+    --bg-deep:#0B1440; --bg-card:#12205C; --bg-field:#1B2C78;
+    --lavender:#3355FF; --pink:#F4ECD8; --gold:#EFE3C0;
+    --text:#F4ECD8; --muted:#9FB0E8; --line:#28399E;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
     background:
-      radial-gradient(circle at 15% 8%, rgba(255,110,199,0.16), transparent 40%),
-      radial-gradient(circle at 85% 0%, rgba(167,139,250,0.20), transparent 45%),
+      radial-gradient(circle at 15% 8%, rgba(244,236,216,0.16), transparent 40%),
+      radial-gradient(circle at 85% 0%, rgba(51,85,255,0.20), transparent 45%),
       var(--bg-deep);
-    color:var(--text); font-family:'Sora', sans-serif; min-height:100vh; padding:0 0 60px;
+    color:var(--text); font-family:'Poppins', sans-serif; min-height:100vh; padding:0 0 60px;
   }
   header.top{
     padding:26px 20px 18px; text-align:center;
@@ -32,8 +32,7 @@
   header.top h1{
     font-family:'Bebas Neue', sans-serif; font-size:clamp(30px,7vw,42px);
     letter-spacing:.04em; margin:0;
-    background:linear-gradient(90deg,var(--lavender),var(--pink));
-    -webkit-background-clip:text; background-clip:text; color:transparent;
+    color:var(--text);
   }
   header.top p{ color:var(--muted); font-size:12.5px; margin:6px 0 0; }
   header.top a{ color:var(--muted); font-size:12px; text-decoration:underline; }
@@ -50,13 +49,13 @@
   label{ display:block; font-size:14px; font-weight:600; margin:12px 0 8px; }
   input[type="text"], input[type="password"]{
     width:100%; background:var(--bg-field); border:1px solid var(--line); border-radius:10px;
-    padding:12px 13px; color:var(--text); font-family:'Sora', sans-serif; font-size:14.5px; outline:none;
+    padding:12px 13px; color:var(--text); font-family:'Poppins', sans-serif; font-size:14.5px; outline:none;
   }
-  input:focus{ border-color:var(--lavender); box-shadow:0 0 0 3px rgba(167,139,250,0.18); }
+  input:focus{ border-color:var(--lavender); box-shadow:0 0 0 3px rgba(51,85,255,0.18); }
   .submit-btn{
     width:100%; margin-top:14px; padding:14px; border:none; border-radius:12px;
-    background:linear-gradient(90deg,var(--lavender),var(--pink)); color:#170F2E;
-    font-family:'Sora', sans-serif; font-weight:700; font-size:15px; cursor:pointer;
+    background:var(--text); color:var(--bg-deep);
+    font-family:'Poppins', sans-serif; font-weight:700; font-size:15px; cursor:pointer;
   }
   .error-text{ color:var(--pink); font-size:12px; margin-top:8px; min-height:14px; }
 
@@ -65,7 +64,7 @@
     flex:1; padding:9px; border-radius:8px; border:1px solid var(--line);
     background:var(--bg-field); color:var(--muted); font-size:12px; font-weight:700; cursor:pointer;
   }
-  .scan-toggle button.active{ border-color:var(--lavender); color:var(--lavender); background:rgba(167,139,250,0.1); }
+  .scan-toggle button.active{ border-color:var(--lavender); color:var(--lavender); background:rgba(51,85,255,0.1); }
   .scan-block{ display:none; }
   .scan-block.active{ display:block; }
   #qrReader{ border-radius:12px; overflow:hidden; border:1px solid var(--line); margin-bottom:14px; }
@@ -73,17 +72,17 @@
   .manual-check-row{ display:flex; gap:8px; margin-top:6px; }
   .manual-check-row input{ flex:1; }
   .manual-check-row button{
-    background:linear-gradient(90deg,var(--lavender),var(--pink)); color:#170F2E;
+    background:var(--text); color:var(--bg-deep);
     border:none; border-radius:10px; padding:0 16px; font-weight:700; cursor:pointer; font-size:13px;
   }
   .scan-result{ margin-top:16px; border-radius:12px; padding:16px; border:1px solid var(--line); display:none; }
   .scan-result.ok{ background:rgba(80,220,150,0.1); border-color:rgba(80,220,150,0.4); }
-  .scan-result.used{ background:rgba(245,194,77,0.1); border-color:rgba(245,194,77,0.4); }
-  .scan-result.invalid{ background:rgba(255,110,199,0.1); border-color:rgba(255,110,199,0.4); }
+  .scan-result.used{ background:rgba(239,227,192,0.1); border-color:rgba(239,227,192,0.4); }
+  .scan-result.invalid{ background:rgba(244,236,216,0.1); border-color:rgba(244,236,216,0.4); }
   .scan-result h4{ margin:0 0 8px; font-size:16px; }
   .scan-result p{ margin:2px 0; font-size:12.5px; color:var(--muted); }
   .security-note{
-    background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.3); color:var(--muted);
+    background:rgba(51,85,255,0.08); border:1px solid rgba(51,85,255,0.3); color:var(--muted);
     border-radius:10px; padding:12px 14px; font-size:12px; line-height:1.6; margin-top:14px;
   }
 </style>
@@ -101,12 +100,12 @@
   <div class="card" id="pinGate">
     <div class="section-label">🔒 Acceso staff de puerta</div>
     <label style="margin-top:0;">PIN</label>
-    <input type="password" id="pinInput" placeholder="Ingresa el PIN" inputmode="numeric">
+    <input type="password" id="pinInput" placeholder="Ingresa el PIN" autocomplete="off">
     <div class="error-text" id="pinError"></div>
     <button type="button" class="submit-btn" id="pinSubmit">Entrar</button>
     <div class="security-note">
-      El PIN es una barrera básica en el navegador para esta demo. Para varios puntos de entrada con control real
-      de quién validó cada entrada, se recomienda autenticación de servidor (usuarios con login) en vez de un PIN compartido.
+      El PIN no está escrito en el código (se guarda como un hash, no en texto plano), así que no se puede leer
+      abriendo "ver código fuente" de la página.
     </div>
   </div>
 
@@ -157,21 +156,38 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // ---------- PIN ----------
-  const VALIDATOR_PIN = '2026'; // ⚠️ puedes usar un PIN distinto al del panel organizador
+  // ---------- PIN protegido con hash ----------
+  // Mismo mecanismo que organizador.html: el PIN real no está en el
+  // código, solo su hash SHA-256. Puedes usar un PIN distinto al del
+  // panel organizador si quieres — solo calcula su hash (ver instrucciones
+  // en organizador.html) y pégalo abajo.
+  const VALIDATOR_PIN_HASH = '4a19dcaf87884d399007eb3a9e211907f254ec1a8a4794de2218d563a516b796'; // PIN actual: ZEBU-STAFF-PUERTA26
+
+  async function sha256Hex(texto){
+    const datos = new TextEncoder().encode(texto);
+    const buffer = await crypto.subtle.digest('SHA-256', datos);
+    return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
   const pinGate = document.getElementById('pinGate');
   const pinInput = document.getElementById('pinInput');
   const pinSubmit = document.getElementById('pinSubmit');
   const pinError = document.getElementById('pinError');
   const scanPanel = document.getElementById('scanPanel');
 
-  function checkPin(){
-    if(pinInput.value === VALIDATOR_PIN){
-      pinGate.style.display = 'none';
-      scanPanel.style.display = 'block';
-      sessionStorage.setItem('sd_validator_ok', '1');
-    }else{
-      pinError.textContent = 'PIN incorrecto, intenta de nuevo.';
+  async function checkPin(){
+    pinSubmit.disabled = true;
+    try{
+      const hash = await sha256Hex(pinInput.value);
+      if(hash === VALIDATOR_PIN_HASH){
+        pinGate.style.display = 'none';
+        scanPanel.style.display = 'block';
+        sessionStorage.setItem('sd_validator_ok', '1');
+      }else{
+        pinError.textContent = 'PIN incorrecto, intenta de nuevo.';
+      }
+    }finally{
+      pinSubmit.disabled = false;
     }
   }
   pinSubmit.addEventListener('click', checkPin);
@@ -250,7 +266,6 @@
   }
 
   // Evita doble-clics/escaneos duplicados casi simultáneos del mismo código
-  let ultimoCodigoProcesado = null;
   let procesando = false;
 
   // Valida una entrada de forma ATÓMICA con una transacción de Firestore:
