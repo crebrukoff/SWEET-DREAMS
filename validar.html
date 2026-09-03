@@ -154,7 +154,7 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  const VALIDATOR_PIN_HASH = '4a19dcaf87884d399007eb3a9e211907f254ec1a8a4794de2218d563a516b796'; // PIN actual: ZEBU-STAFF-PUERTA26
+  const VALIDATOR_PIN_HASH = '4a19dcaf87884d399007eb3a9e211907f254ec1a8a4794de2218d563a516b796'; 
 
   async function sha256Hex(texto){
     const datos = new TextEncoder().encode(texto);
