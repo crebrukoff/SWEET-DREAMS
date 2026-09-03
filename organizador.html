@@ -118,6 +118,12 @@
   .status-badge.parcial{ background:rgba(239,227,192,0.15); color:var(--gold); }
 
   .top-actions{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:4px; }
+  .danger-btn{
+    background:rgba(255,90,90,0.12); border:1px solid rgba(255,90,90,0.5); color:#FF8A8A;
+    border-radius:8px; padding:8px 12px; font-size:12px; cursor:pointer; font-family:'Poppins', sans-serif;
+  }
+  .danger-btn:hover{ background:rgba(255,90,90,0.22); }
+  .danger-btn:disabled{ opacity:.5; cursor:default; }
   .ghost-btn{
     background:none; border:1px solid var(--line); color:var(--text); border-radius:8px;
     padding:8px 12px; font-size:12px; cursor:pointer; text-decoration:none; display:inline-block;
@@ -177,6 +183,7 @@
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <a class="ghost-btn" href="validar.html" target="_blank">📷 Ir a validar entradas</a>
           <button type="button" class="ghost-btn" id="refreshAdmin">🔄 Actualizar</button>
+          <button type="button" class="danger-btn" id="cleanupBtn">🧹 Limpiar entradas huérfanas</button>
         </div>
       </div>
       <div class="stats-grid" style="margin-top:14px;">
@@ -617,6 +624,54 @@
   filterEstado.addEventListener('change', renderFilteredRows);
   filterFecha.addEventListener('input', renderFilteredRows);
   document.getElementById('refreshAdmin').addEventListener('click', loadAdminData);
+
+  // Limpieza de datos: borra entradas/QR que quedaron "huérfanos" porque su
+  // registro fue borrado con una versión anterior (que no borraba en
+  // cascada). Compara cada entrada contra la lista actual de registros; si
+  // su registroId ya no existe, la elimina. Es seguro correrlo varias
+  // veces — si no encuentra huérfanas, simplemente no hace nada.
+  const cleanupBtn = document.getElementById('cleanupBtn');
+  cleanupBtn.addEventListener('click', async () => {
+    const idsDeRegistrosActuales = new Set(currentRegistrations.map(r => r.id));
+    const huerfanas = currentEntradas.filter(e => !idsDeRegistrosActuales.has(e.registroId));
+
+    if(huerfanas.length === 0){
+      alert('No se encontraron entradas huérfanas. Todo está en orden.');
+      return;
+    }
+
+    const ok = confirm(
+      `Se encontraron ${huerfanas.length} entrada(s) sin un registro asociado ` +
+      `(de registros que ya fueron borrados). Esto va a borrarlas permanentemente ` +
+      `y actualizará las estadísticas (recaudado, entradas confirmadas, etc). ` +
+      `Esta acción no se puede deshacer.\n\n¿Continuar?`
+    );
+    if(!ok) return;
+
+    cleanupBtn.disabled = true;
+    cleanupBtn.textContent = 'Limpiando…';
+    try{
+      // Firestore permite hasta 500 operaciones por batch; para un evento
+      // normal esto sobra, pero por si acaso lo partimos en bloques de 400.
+      const bloques = [];
+      for(let i = 0; i < huerfanas.length; i += 400){
+        bloques.push(huerfanas.slice(i, i + 400));
+      }
+      for(const bloque of bloques){
+        const batch = db.batch();
+        bloque.forEach(e => batch.delete(db.collection('entradas').doc(e.id)));
+        await batch.commit();
+      }
+      alert(`Se borraron ${huerfanas.length} entrada(s) huérfana(s). Las estadísticas ya quedaron correctas.`);
+      await loadAdminData();
+    }catch(err){
+      console.error('Error al limpiar entradas huérfanas', err);
+      alert('No se pudo completar la limpieza. Intenta de nuevo.');
+    }finally{
+      cleanupBtn.disabled = false;
+      cleanupBtn.textContent = '🧹 Limpiar entradas huérfanas';
+    }
+  });
 
   function openAdmin(){
     loadAdminData();
