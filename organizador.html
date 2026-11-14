@@ -12,7 +12,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="qrcode.min.js"></script>
 <style>
   :root{
     --bg-deep:#0B1440; --bg-card:#12205C; --bg-field:#1B2C78;
@@ -166,8 +166,8 @@
   <!-- PIN gate -->
   <div class="card" id="pinGate">
     <div class="section-label">🔒 Acceso organizador</div>
-    <label style="margin-top:0;">PIN</label>
-    <input type="password" id="pinInput" placeholder="Ingresa el PIN" autocomplete="off">
+    <label style="margin-top:0;">Contraseña</label>
+    <input type="password" id="pinInput" placeholder="Ingresa la contraseña" autocomplete="off">
     <div class="error-text" id="pinError"></div>
     <button type="button" class="submit-btn" id="pinSubmit">Entrar</button>
     <div class="security-note">
@@ -260,10 +260,11 @@
 </div>
 
 <script>
+  // Escapa también comillas: seguro para texto y para atributos HTML.
   function escapeHtml(str){
-    const d = document.createElement('div');
-    d.textContent = str == null ? '' : str;
-    return d.innerHTML;
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   const firebaseConfig = {
@@ -305,7 +306,7 @@
       if(err && err.code === 'auth/too-many-requests'){
         pinError.textContent = 'Demasiados intentos. Espera unos minutos e intenta de nuevo.';
       }else{
-        pinError.textContent = 'Código incorrecto, intenta de nuevo.';
+        pinError.textContent = 'Contraseña incorrecta, intenta de nuevo.';
       }
     }finally{
       pinInput.value = '';
@@ -324,7 +325,7 @@
     }else{
       adminPanel.style.display = 'none';
       pinGate.style.display = 'block';
-      if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+      detenerListeners();
       if(idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
     }
   });
@@ -340,7 +341,9 @@
 
   let currentRegistrations = [];
   let currentEntradas = [];
-  let pollTimer = null;
+  let unsubRegs = null;
+  let unsubEnts = null;
+  const generandoIds = new Set();
   let idleTimer = null;
   const IDLE_MS = 30 * 60 * 1000; // cierre automático tras 30 min sin actividad
   function resetIdle(){
@@ -387,19 +390,6 @@
     return `https://wa.me/${numero}?text=${encodeURIComponent(lineas.join('\n'))}`;
   }
 
-  async function getRegistrations(){
-    try{
-      const snapshot = await db.collection('registros').orderBy('ts', 'desc').get();
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }catch(err){ console.error('Error al leer Firestore', err); return []; }
-  }
-  async function getEntradas(){
-    try{
-      const snapshot = await db.collection('entradas').orderBy('emitidaEn', 'desc').get();
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }catch(err){ console.error('Error al leer entradas', err); return []; }
-  }
-
   function entradasGeneradasPara(registroId){
     return currentEntradas.filter(e => e.registroId === registroId);
   }
@@ -434,16 +424,18 @@
       alert('Este registro ya tiene todas sus entradas generadas.');
       return;
     }
+    if(generandoIds.has(registro.id)) return;
+    generandoIds.add(registro.id);
     if(btnEl){ btnEl.disabled = true; btnEl.textContent = 'Generando…'; }
     try{
       const nuevaEntrada = await generarEntradaParaRegistro(registro);
-      currentEntradas.unshift(nuevaEntrada);
       refreshStatsAndTable();
       mostrarModalQR(nuevaEntrada, registro);
     }catch(err){
       console.error('Error al generar la entrada', err);
       alert('No se pudo generar la entrada. Intenta de nuevo.');
     }finally{
+      generandoIds.delete(registro.id);
       if(btnEl){ btnEl.disabled = false; }
       refreshStatsAndTable();
     }
@@ -513,18 +505,6 @@
   const adminRows = document.getElementById('adminRows');
   const adminCount = document.getElementById('adminCount');
 
-  async function loadAdminData(){
-    adminCount.textContent = 'Cargando…';
-    try{
-      const [regs, ents] = await Promise.all([getRegistrations(), getEntradas()]);
-      currentRegistrations = regs;
-      currentEntradas = ents;
-      refreshStatsAndTable();
-    }catch(err){
-      adminCount.textContent = 'No se pudieron cargar los registros.';
-    }
-  }
-
   function refreshStatsAndTable(){ renderStats(); renderFilteredRows(); }
 
   function renderStats(){
@@ -592,15 +572,15 @@
       return `
       <tr>
         <td class="name-cell">${escapeHtml(e.nombre||'')}</td>
-        <td><a class="wa-link" href="${buildBuyerWhatsappUrl(e)}" target="_blank" rel="noopener">📲 ${escapeHtml(e.telefono||'')}</a></td>
+        <td><a class="wa-link" href="${escapeHtml(buildBuyerWhatsappUrl(e))}" target="_blank" rel="noopener">📲 ${escapeHtml(e.telefono||'')}</a></td>
         <td>${escapeHtml(e.cedula||'')}</td>
         <td><span class="type-badge ${escapeHtml(e.tipo||'General')}">${escapeHtml(e.tipo||'General')}</span></td>
         <td><span class="ticket-badge">${escapeHtml(e.entradas||'')}</span></td>
         <td><span class="status-badge ${estado}">${estadoLabel(estado)} (${generadas}/${solicitadas})</span></td>
         <td><span class="ref-code">${escapeHtml(e.referencia||'—')}</span></td>
         <td class="action-cell">
-          ${faltan > 0 ? `<button type="button" class="confirm-btn" onclick="confirmarPagoDesdeUI('${escapeHtml(e.id)}', this)">✅ Confirmar compra y generar QR</button>` : ''}
-          <button type="button" class="delete-btn" onclick="eliminarRegistro('${escapeHtml(e.id||'')}', this)">🗑️ Borrar</button>
+          ${faltan > 0 ? `<button type="button" class="confirm-btn" data-action="confirmar" data-id="${escapeHtml(e.id)}">✅ Confirmar compra y generar QR</button>` : ''}
+          <button type="button" class="delete-btn" data-action="borrar" data-id="${escapeHtml(e.id)}">🗑️ Borrar</button>
         </td>
       </tr>`;
     }).join('');
@@ -626,7 +606,6 @@
       entradasSnap.forEach(doc => batch.delete(doc.ref));
       await batch.commit();
 
-      await loadAdminData();
     }catch(err){
       console.error('Error al borrar el registro', err);
       alert('No se pudo borrar el registro.\n\nDetalle técnico: ' + (err && (err.code || err.message) ? (err.code || '') + ' ' + (err.message || '') : 'error desconocido'));
@@ -634,11 +613,19 @@
     }
   };
 
+  adminRows.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('button[data-action]');
+    if(!btn) return;
+    const id = btn.dataset.id;
+    if(btn.dataset.action === 'confirmar') window.confirmarPagoDesdeUI(id, btn);
+    else if(btn.dataset.action === 'borrar') window.eliminarRegistro(id, btn);
+  });
+
   filterNombre.addEventListener('input', renderFilteredRows);
   filterTipo.addEventListener('change', renderFilteredRows);
   filterEstado.addEventListener('change', renderFilteredRows);
   filterFecha.addEventListener('input', renderFilteredRows);
-  document.getElementById('refreshAdmin').addEventListener('click', loadAdminData);
+  document.getElementById('refreshAdmin').addEventListener('click', openAdmin);
 
   const cleanupBtn = document.getElementById('cleanupBtn');
   cleanupBtn.addEventListener('click', async () => {
@@ -671,7 +658,6 @@
         await batch.commit();
       }
       alert(`Se borraron ${huerfanas.length} entrada(s) huérfana(s). Las estadísticas ya quedaron correctas.`);
-      await loadAdminData();
     }catch(err){
       console.error('Error al limpiar entradas huérfanas', err);
       alert('No se pudo completar la limpieza.\n\nDetalle técnico: ' + (err && (err.code || err.message) ? (err.code || '') + ' ' + (err.message || '') : 'error desconocido') + '\n\nRevisa la consola del navegador (F12) para más detalle, o mándame este mensaje.');
@@ -681,12 +667,31 @@
     }
   });
 
-  function openAdmin(){
-    loadAdminData();
-    if(pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(loadAdminData, 8000);
+  function detenerListeners(){
+    if(unsubRegs){ unsubRegs(); unsubRegs = null; }
+    if(unsubEnts){ unsubEnts(); unsubEnts = null; }
   }
 
+  // Escucha en tiempo real: solo lee los cambios, no toda la base cada pocos segundos.
+  function openAdmin(){
+    detenerListeners();
+    adminCount.textContent = 'Cargando…';
+    unsubRegs = db.collection('registros').orderBy('ts', 'desc').onSnapshot((snap) => {
+      currentRegistrations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      refreshStatsAndTable();
+    }, (err) => {
+      if(!auth.currentUser) return;
+      console.error('Error al leer registros', err);
+      adminCount.textContent = 'No se pudieron cargar los registros.';
+    });
+    unsubEnts = db.collection('entradas').orderBy('emitidaEn', 'desc').onSnapshot((snap) => {
+      currentEntradas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      refreshStatsAndTable();
+    }, (err) => {
+      if(!auth.currentUser) return;
+      console.error('Error al leer entradas', err);
+    });
+  }
 
 </script>
 </body>
