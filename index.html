@@ -165,15 +165,19 @@
   <div class="card top" id="formCard">
     <div class="section-label">💫 Datos del comprador</div>
     <form id="regForm">
+      <!-- Campo trampa para bots: las personas no lo ven -->
+      <div style="position:absolute;left:-9999px;top:-9999px;height:0;overflow:hidden;" aria-hidden="true">
+        <input type="text" id="sitioWeb" tabindex="-1" autocomplete="off">
+      </div>
       <label>Nombre completo<span class="req">*</span></label>
-      <input type="text" id="nombre" placeholder="Tu respuesta" required>
+      <input type="text" id="nombre" placeholder="Tu respuesta" minlength="3" maxlength="120" autocomplete="name" required>
 
       <label>Número de teléfono / WhatsApp<span class="req">*</span></label>
       <input type="tel" id="telefono" placeholder="8888 8888" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required>
       <div class="hint">8 dígitos, sin +506 (ej: 88888888)</div>
 
       <label>Número de cédula<span class="req">*</span></label>
-      <input type="text" inputmode="numeric" id="cedula" placeholder="Tu respuesta" required>
+      <input type="text" inputmode="numeric" id="cedula" placeholder="Tu respuesta" minlength="5" maxlength="30" required>
 
       <label>Tipo de entrada<span class="req">*</span></label>
       <div class="radio-group" id="tipoGroup">
@@ -240,9 +244,12 @@
   const submitBtn = document.getElementById('submitBtn');
 
   function generarReferencia(){
-    const parte1 = Date.now().toString(36).toUpperCase().slice(-5);
-    const parte2 = Math.random().toString(36).toUpperCase().slice(2, 5);
-    return `SD-${parte1}${parte2}`;
+    const alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes = new Uint8Array(7);
+    crypto.getRandomValues(bytes);
+    let r = '';
+    bytes.forEach(b => { r += alfabeto[b % alfabeto.length]; });
+    return 'SD-' + r;
   }
 
   const telefonoInput = document.getElementById('telefono');
@@ -297,6 +304,21 @@
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    // Bot: llenó el campo trampa. Se simula éxito sin guardar nada.
+    if(document.getElementById('sitioWeb').value){
+      formCard.style.display = 'none';
+      confirmCard.style.display = 'block';
+      return;
+    }
+    // Pausa mínima entre envíos desde el mismo dispositivo
+    let ultimoEnvio = 0;
+    try{ ultimoEnvio = parseInt(localStorage.getItem('sd_ultimo_envio') || '0', 10) || 0; }catch(_){}
+    if(Date.now() - ultimoEnvio < 15000){
+      alert('Espera unos segundos antes de enviar otro registro.');
+      return;
+    }
+
     const nombre = document.getElementById('nombre').value.trim();
     const telefono = document.getElementById('telefono').value.trim();
     if(!/^\d{8}$/.test(telefono)){
@@ -304,6 +326,8 @@
       return;
     }
     const cedula = document.getElementById('cedula').value.trim();
+    if(nombre.length < 3 || nombre.length > 120){ alert('Escribe tu nombre completo (mínimo 3 caracteres).'); return; }
+    if(cedula.length < 5 || cedula.length > 30){ alert('Revisa tu número de cédula.'); return; }
     const tipoEl = document.querySelector('input[name="tipo"]:checked');
     if(!tipoEl){ alert('Selecciona el tipo de entrada (General o VIP).'); return; }
     const tipo = tipoEl.value;
@@ -331,6 +355,8 @@
       alert('No se pudo guardar tu registro. Por favor intenta de nuevo.');
       return;
     }
+
+    try{ localStorage.setItem('sd_ultimo_envio', String(Date.now())); }catch(_){}
 
     recap.innerHTML = `
       <div><span>Nombre</span><span>${escapeHtml(nombre)}</span></div>
