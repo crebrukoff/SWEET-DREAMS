@@ -187,11 +187,8 @@
       <label>Número de cédula<span class="req">*</span></label>
       <input type="text" inputmode="numeric" id="cedula" placeholder="Tu respuesta" minlength="5" maxlength="30" required>
 
-      <label>Tipo de entrada<span class="req">*</span></label>
-      <div class="radio-group" id="tipoGroup">
-        <label class="radio-option"><input type="radio" name="tipo" value="General" required>🎟️ General — ₡3.000</label>
-        <label class="radio-option"><input type="radio" name="tipo" value="VIP">👑 VIP — ₡100.000 (5 personas - Incluye litro de Buchanan's)</label>
-      </div>
+      <label>Tipo de entrada</label>
+      <div class="note-box">🎟️ <strong>Entrada General — ₡5.000</strong> por persona</div>
 
       <div id="ticketSection">
         <label>¿Cuántas entradas deseas?<span class="req">*</span></label>
@@ -202,10 +199,6 @@
           <label class="radio-option"><input type="radio" name="entradas" value="4">4 entradas</label>
           <label class="radio-option"><input type="radio" name="entradas" value="5+">5 entradas </label>
         </div>
-      </div>
-
-      <div class="note-box" id="vipNote" style="display:none;">
-        🎉 El paquete VIP incluye entrada para <strong>5 personas</strong> y un litro de Buchanan's — no necesitas elegir cantidad, ya está incluida.
       </div>
 
       <label class="check-option">
@@ -269,26 +262,8 @@
   });
 
   const ticketSection = document.getElementById('ticketSection');
-  const vipNote = document.getElementById('vipNote');
   const entradaRadios = document.querySelectorAll('input[name="entradas"]');
   const fiveRadio = document.querySelector('input[name="entradas"][value="5+"]');
-
-  function actualizarSeccionCantidad(){
-    const tipoEl = document.querySelector('input[name="tipo"]:checked');
-    const esVip = tipoEl && tipoEl.value === 'VIP';
-    if(esVip){
-      ticketSection.style.display = 'none';
-      vipNote.style.display = 'block';
-      if(fiveRadio) fiveRadio.checked = true;
-    }else{
-      ticketSection.style.display = 'block';
-      vipNote.style.display = 'none';
-      entradaRadios.forEach(r => { r.checked = false; });
-    }
-  }
-  document.querySelectorAll('input[name="tipo"]').forEach(r => {
-    r.addEventListener('change', actualizarSeccionCantidad);
-  });
 
   function escapeHtml(str){
     const d = document.createElement('div');
@@ -339,9 +314,7 @@
     const cedula = document.getElementById('cedula').value.trim();
     if(nombre.length < 3 || nombre.length > 120){ alert('Escribe tu nombre completo (mínimo 3 caracteres).'); return; }
     if(cedula.length < 5 || cedula.length > 30){ alert('Revisa tu número de cédula.'); return; }
-    const tipoEl = document.querySelector('input[name="tipo"]:checked');
-    if(!tipoEl){ alert('Selecciona el tipo de entrada (General o VIP).'); return; }
-    const tipo = tipoEl.value;
+    const tipo = 'General';
     const entradasEl = document.querySelector('input[name="entradas"]:checked');
     if(!entradasEl){ alert('Selecciona cuántas entradas deseas.'); return; }
     const entradas = entradasEl.value;
@@ -374,7 +347,7 @@
       <div><span>Teléfono</span><span>${escapeHtml(telefono)}</span></div>
       <div><span>Cédula</span><span>${escapeHtml(cedula)}</span></div>
       <div><span>Tipo</span><span>${escapeHtml(tipo)}</span></div>
-      <div><span>Entradas</span><span>${tipo === 'VIP' ? 'Paquete VIP (5 personas)' : escapeHtml(entradas)}</span></div>
+      <div><span>Entradas</span><span>${escapeHtml(entradas)}</span></div>
       <div><span>N° de referencia</span><span>${escapeHtml(referencia)}</span></div>
     `;
 
@@ -387,7 +360,6 @@
   document.getElementById('againBtn').addEventListener('click', () => {
     form.reset();
     ticketSection.style.display = 'block';
-    vipNote.style.display = 'none';
     confirmCard.style.display = 'none';
     formCard.style.display = 'block';
   });
