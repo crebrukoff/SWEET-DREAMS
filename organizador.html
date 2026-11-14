@@ -2,12 +2,16 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sweet Dreams — Panel organizador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{
@@ -178,8 +182,9 @@
       <div class="top-actions">
         <div class="section-label" style="margin-bottom:0;">📊 Resumen</div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <a class="ghost-btn" href="validar.html" target="_blank">📷 Ir a validar entradas</a>
+          <a class="ghost-btn" href="puerta-swvz7t23.html" target="_blank" rel="noopener noreferrer">📷 Ir a validar entradas</a>
           <button type="button" class="ghost-btn" id="refreshAdmin">🔄 Actualizar</button>
+          <button type="button" class="ghost-btn" id="logoutBtn">🔒 Cerrar sesión</button>
           <button type="button" class="danger-btn" id="cleanupBtn">🧹 Limpiar entradas huérfanas</button>
         </div>
       </div>
@@ -270,15 +275,18 @@
     appId: "1:609888686575:web:af9b844059f79e0ad6661a"
   };
   firebase.initializeApp(firebaseConfig);
+
+  // App Check (reCAPTCHA v3): pega aquí tu clave del sitio. Mientras diga PEGA_AQUI_TU_CLAVE_DEL_SITIO queda desactivado.
+  const RECAPTCHA_SITE_KEY = 'PEGA_AQUI_TU_CLAVE_DEL_SITIO';
+  if(RECAPTCHA_SITE_KEY && RECAPTCHA_SITE_KEY.indexOf('PEGA_AQUI') !== 0){
+    firebase.appCheck().activate(RECAPTCHA_SITE_KEY, true);
+  }
   const db = firebase.firestore();
 
-  const ADMIN_PIN_HASH = 'cd746dd1eb9404a57fb0ad94ca374d8b4d8d0ad5a163baf47b61b4799e425b21'; 
-
-  async function sha256Hex(texto){
-    const datos = new TextEncoder().encode(texto);
-    const buffer = await crypto.subtle.digest('SHA-256', datos);
-    return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-  }
+  const ACCESS_EMAIL = 'organizador@sweetdreams.com';
+  const auth = firebase.auth();
+  // La sesión vive solo en esta pestaña: al cerrarla, se cierra la sesión.
+  const persistenciaLista = auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(() => {});
 
   const pinGate = document.getElementById('pinGate');
   const pinInput = document.getElementById('pinInput');
@@ -287,23 +295,39 @@
   const adminPanel = document.getElementById('adminPanel');
 
   async function checkPin(){
+    if(!pinInput.value) return;
     pinSubmit.disabled = true;
+    pinError.textContent = '';
     try{
-      const hash = await sha256Hex(pinInput.value);
-      if(hash === ADMIN_PIN_HASH){
-        pinGate.style.display = 'none';
-        adminPanel.style.display = 'block';
-        sessionStorage.setItem('sd_admin_ok', '1');
-        openAdmin();
+      await persistenciaLista;
+      await auth.signInWithEmailAndPassword(ACCESS_EMAIL, pinInput.value);
+    }catch(err){
+      if(err && err.code === 'auth/too-many-requests'){
+        pinError.textContent = 'Demasiados intentos. Espera unos minutos e intenta de nuevo.';
       }else{
-        pinError.textContent = 'PIN incorrecto, intenta de nuevo.';
+        pinError.textContent = 'Código incorrecto, intenta de nuevo.';
       }
     }finally{
+      pinInput.value = '';
       pinSubmit.disabled = false;
     }
   }
   pinSubmit.addEventListener('click', checkPin);
   pinInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') checkPin(); });
+
+  auth.onAuthStateChanged((user) => {
+    if(user){
+      pinGate.style.display = 'none';
+      adminPanel.style.display = 'block';
+      openAdmin();
+      resetIdle();
+    }else{
+      adminPanel.style.display = 'none';
+      pinGate.style.display = 'block';
+      if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+      if(idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
+    }
+  });
 
   // PRECIOS: precio que se muestra al comprador en el mensaje de WhatsApp.
   //   General es por entrada. VIP es el paquete completo (cubre hasta 5 personas).
@@ -317,6 +341,15 @@
   let currentRegistrations = [];
   let currentEntradas = [];
   let pollTimer = null;
+  let idleTimer = null;
+  const IDLE_MS = 30 * 60 * 1000; // cierre automático tras 30 min sin actividad
+  function resetIdle(){
+    if(!auth.currentUser) return;
+    if(idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => { auth.signOut(); }, IDLE_MS);
+  }
+  ['click','keydown','touchstart','mousemove'].forEach(ev => document.addEventListener(ev, resetIdle, {passive:true}));
+  document.getElementById('logoutBtn').addEventListener('click', () => { auth.signOut(); });
 
   function formatColones(num){ return '₡' + num.toLocaleString('es-CR'); }
 
@@ -654,12 +687,6 @@
     pollTimer = setInterval(loadAdminData, 8000);
   }
 
-  
-  if(sessionStorage.getItem('sd_admin_ok') === '1'){
-    pinGate.style.display = 'none';
-    adminPanel.style.display = 'block';
-    openAdmin();
-  }
 
 </script>
 </body>
