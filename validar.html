@@ -2,12 +2,16 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sweet Dreams — Validar entradas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check-compat.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
   :root{
@@ -91,7 +95,7 @@
 
 <header class="top">
   <h1>Validar entradas</h1>
-  <p>Sweet Dreams · 19 dic 2026 · Rancho Agüeros · 9:00 PM · <a href="organizador.html">← Panel organizador</a></p>
+  <p>Sweet Dreams · 19 dic 2026 · Rancho Agüeros · 9:00 PM · <a href="panel-7my9nuk4.html">← Panel organizador</a> · <a href="#" id="logoutLink">Cerrar sesión</a></p>
 </header>
 
 <div class="wrap">
@@ -152,15 +156,18 @@
     appId: "1:609888686575:web:af9b844059f79e0ad6661a"
   };
   firebase.initializeApp(firebaseConfig);
+
+  // App Check (reCAPTCHA v3): pega aquí tu clave del sitio. Mientras diga PEGA_AQUI_TU_CLAVE_DEL_SITIO queda desactivado.
+  const RECAPTCHA_SITE_KEY = 'PEGA_AQUI_TU_CLAVE_DEL_SITIO';
+  if(RECAPTCHA_SITE_KEY && RECAPTCHA_SITE_KEY.indexOf('PEGA_AQUI') !== 0){
+    firebase.appCheck().activate(RECAPTCHA_SITE_KEY, true);
+  }
   const db = firebase.firestore();
 
-  const VALIDATOR_PIN_HASH = '4a19dcaf87884d399007eb3a9e211907f254ec1a8a4794de2218d563a516b796'; 
-
-  async function sha256Hex(texto){
-    const datos = new TextEncoder().encode(texto);
-    const buffer = await crypto.subtle.digest('SHA-256', datos);
-    return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-  }
+  const ACCESS_EMAIL = 'puerta@sweetdreams.com';
+  const auth = firebase.auth();
+  // La sesión vive solo en esta pestaña: al cerrarla, se cierra la sesión.
+  const persistenciaLista = auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(() => {});
 
   const pinGate = document.getElementById('pinGate');
   const pinInput = document.getElementById('pinInput');
@@ -169,27 +176,37 @@
   const scanPanel = document.getElementById('scanPanel');
 
   async function checkPin(){
+    if(!pinInput.value) return;
     pinSubmit.disabled = true;
+    pinError.textContent = '';
     try{
-      const hash = await sha256Hex(pinInput.value);
-      if(hash === VALIDATOR_PIN_HASH){
-        pinGate.style.display = 'none';
-        scanPanel.style.display = 'block';
-        sessionStorage.setItem('sd_validator_ok', '1');
+      await persistenciaLista;
+      await auth.signInWithEmailAndPassword(ACCESS_EMAIL, pinInput.value);
+    }catch(err){
+      if(err && err.code === 'auth/too-many-requests'){
+        pinError.textContent = 'Demasiados intentos. Espera unos minutos e intenta de nuevo.';
       }else{
-        pinError.textContent = 'PIN incorrecto, intenta de nuevo.';
+        pinError.textContent = 'Código incorrecto, intenta de nuevo.';
       }
     }finally{
+      pinInput.value = '';
       pinSubmit.disabled = false;
     }
   }
   pinSubmit.addEventListener('click', checkPin);
   pinInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') checkPin(); });
 
-  if(sessionStorage.getItem('sd_validator_ok') === '1'){
-    pinGate.style.display = 'none';
-    scanPanel.style.display = 'block';
-  }
+  auth.onAuthStateChanged((user) => {
+    if(user){
+      pinGate.style.display = 'none';
+      scanPanel.style.display = 'block';
+    }else{
+      scanPanel.style.display = 'none';
+      pinGate.style.display = 'block';
+      if(typeof stopCamera === 'function'){ stopCamera(); }
+    }
+  });
+  document.getElementById('logoutLink').addEventListener('click', (ev) => { ev.preventDefault(); auth.signOut(); });
 
   const VALIDADOR_ID = 'staff-' + Math.random().toString(36).slice(2, 7);
 
