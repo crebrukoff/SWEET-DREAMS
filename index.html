@@ -138,6 +138,14 @@
   .again{ margin-top:20px; background:none; border:1px solid var(--line); color:var(--text); padding:11px 16px; border-radius:10px; cursor:pointer; font-size:13px; }
   footer{ text-align:center; color:#5C5182; font-size:11.5px; margin-top:26px; padding:0 20px; }
   footer a{ color:#5C5182; text-decoration:underline; }
+  #musicBtn{
+    position:fixed; right:16px; bottom:16px; z-index:40;
+    width:48px; height:48px; border-radius:50%;
+    background:var(--bg-card); border:1px solid var(--line); color:var(--text);
+    font-size:20px; cursor:pointer; box-shadow:0 8px 24px rgba(0,0,0,.4);
+    display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  #musicBtn:hover{ border-color:var(--lavender); }
 </style>
 </head>
 <body>
@@ -226,6 +234,9 @@
   </footer>
 </div>
 
+<audio id="bgMusic" src="cancion.mp3" loop preload="none"></audio>
+<button type="button" id="musicBtn" aria-label="Activar o pausar la música" title="Música">🔇</button>
+
 <script>
   // Estrellitas
   const starsEl = document.getElementById('stars');
@@ -295,8 +306,8 @@
   };
   firebase.initializeApp(firebaseConfig);
 
-  // App Check (reCAPTCHA v3): pega aquí tu clave del sitio. Mientras diga 6LcxbR8uAAAAALj0h4c9uHxpfYhni5HDn3oSKBTM queda desactivado.
-  const RECAPTCHA_SITE_KEY = '6LcxbR8uAAAAALj0h4c9uHxpfYhni5HDn3oSKBTM';
+  // App Check (reCAPTCHA v3): pega aquí tu clave del sitio. Mientras diga 6LcxbR8uAAAAAEAqwvAZUSVKos_C_iConZx4FxEn queda desactivado.
+  const RECAPTCHA_SITE_KEY = '6LcxbR8uAAAAAEAqwvAZUSVKos_C_iConZx4FxEn';
   if(RECAPTCHA_SITE_KEY && RECAPTCHA_SITE_KEY.indexOf('PEGA_AQUI') !== 0){
     firebase.appCheck().activate(new firebase.appCheck.ReCaptchaEnterpriseProvider(RECAPTCHA_SITE_KEY), true);
   }
@@ -380,6 +391,31 @@
     confirmCard.style.display = 'none';
     formCard.style.display = 'block';
   });
+
+  // Música de fondo: arranca con el primer toque de la persona; el botón la pausa o reactiva.
+  const music = document.getElementById('bgMusic');
+  const musicBtn = document.getElementById('musicBtn');
+  let usuarioPauso = false;
+  music.volume = 0.5;
+  function actualizarMusicBtn(){ musicBtn.textContent = music.paused ? '🔇' : '🔊'; }
+  async function reproducirMusica(){
+    try{ await music.play(); }catch(err){ /* el navegador no lo permitió todavía */ }
+    actualizarMusicBtn();
+  }
+  music.addEventListener('play', actualizarMusicBtn);
+  music.addEventListener('pause', actualizarMusicBtn);
+  musicBtn.addEventListener('click', () => {
+    if(music.paused){ usuarioPauso = false; reproducirMusica(); }
+    else{ usuarioPauso = true; music.pause(); }
+  });
+  function primerToque(ev){
+    if(ev.target && ev.target.closest && ev.target.closest('#musicBtn')) return;
+    document.removeEventListener('pointerdown', primerToque);
+    document.removeEventListener('keydown', primerToque);
+    if(!usuarioPauso && music.paused) reproducirMusica();
+  }
+  document.addEventListener('pointerdown', primerToque);
+  document.addEventListener('keydown', primerToque);
 </script>
 </body>
 </html>
