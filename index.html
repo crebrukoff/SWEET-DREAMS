@@ -288,8 +288,8 @@
   };
   firebase.initializeApp(firebaseConfig);
 
-  // App Check (reCAPTCHA v3): pega aquí tu clave del sitio. Mientras diga PEGA_AQUI_TU_CLAVE_DEL_SITIO queda desactivado.
-  const RECAPTCHA_SITE_KEY = 'PEGA_AQUI_TU_CLAVE_DEL_SITIO';
+  // App Check (reCAPTCHA v3): pega aquí tu clave del sitio. Mientras diga 6LcxbR8uAAAAAEAqwvAZUSVKos_C_iConZx4FxEn queda desactivado.
+  const RECAPTCHA_SITE_KEY = '6LcxbR8uAAAAAEAqwvAZUSVKos_C_iConZx4FxEn';
   if(RECAPTCHA_SITE_KEY && RECAPTCHA_SITE_KEY.indexOf('PEGA_AQUI') !== 0){
     firebase.appCheck().activate(RECAPTCHA_SITE_KEY, true);
   }
