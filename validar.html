@@ -12,7 +12,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check-compat.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<!-- Librería QR alojada en tu propio hosting (descárgala y súbela junto a este archivo) -->
+<script src="html5-qrcode.min.js"></script>
 <style>
   :root{
     --bg-deep:#0B1440; --bg-card:#12205C; --bg-field:#1B2C78;
@@ -103,8 +104,8 @@
   <!-- PIN gate -->
   <div class="card" id="pinGate">
     <div class="section-label">🔒 Acceso staff de puerta</div>
-    <label style="margin-top:0;">PIN</label>
-    <input type="password" id="pinInput" placeholder="Ingresa el PIN" autocomplete="off">
+    <label style="margin-top:0;">Contraseña de puerta</label>
+    <input type="password" id="pinInput" placeholder="Ingresa la contraseña" autocomplete="off">
     <div class="error-text" id="pinError"></div>
     <button type="button" class="submit-btn" id="pinSubmit">Entrar</button>
     <div class="security-note">
@@ -131,7 +132,7 @@
     <div class="scan-block" id="blockManual">
       <label style="margin-top:0;">Código de la entrada</label>
       <div class="manual-check-row">
-        <input type="text" id="manualCode" placeholder="Ej: SDQ-XXXXXXXX">
+        <input type="text" id="manualCode" placeholder="Ej: SDQ-XXXXXXXX" autocomplete="off">
         <button type="button" id="manualCheckBtn">Validar</button>
       </div>
     </div>
@@ -157,7 +158,7 @@
   };
   firebase.initializeApp(firebaseConfig);
 
-  // App Check (reCAPTCHA v3): pega aquí tu clave del sitio. Mientras diga 6LcxbR8uAAAAAEAqwvAZUSVKos_C_iConZx4FxEn queda desactivado.
+  // App Check (reCAPTCHA v3)
   const RECAPTCHA_SITE_KEY = '6LcxbR8uAAAAAEAqwvAZUSVKos_C_iConZx4FxEn';
   if(RECAPTCHA_SITE_KEY && RECAPTCHA_SITE_KEY.indexOf('PEGA_AQUI') !== 0){
     firebase.appCheck().activate(RECAPTCHA_SITE_KEY, true);
@@ -186,7 +187,7 @@
       if(err && err.code === 'auth/too-many-requests'){
         pinError.textContent = 'Demasiados intentos. Espera unos minutos e intenta de nuevo.';
       }else{
-        pinError.textContent = 'Código incorrecto, intenta de nuevo.';
+        pinError.textContent = 'Contraseña incorrecta, intenta de nuevo.';
       }
     }finally{
       pinInput.value = '';
@@ -207,8 +208,6 @@
     }
   });
   document.getElementById('logoutLink').addEventListener('click', (ev) => { ev.preventDefault(); auth.signOut(); });
-
-  const VALIDADOR_ID = 'staff-' + Math.random().toString(36).slice(2, 7);
 
   const scanBlockBtns = document.querySelectorAll('.scan-block-btn');
   scanBlockBtns.forEach(btn => {
@@ -232,13 +231,24 @@
   const stopCameraBtn = document.getElementById('stopCameraBtn');
   const cameraHint = document.getElementById('cameraHint');
 
+  // Enfriamiento: evita que el mismo QR se lea varias veces seguidas
+  let ultimoCodigo = '';
+  let ultimoTs = 0;
+
   async function startCamera(){
     try{
       html5QrCode = new Html5Qrcode('qrReader');
       await html5QrCode.start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: 240 },
-        (decodedText) => { validarEntrada(decodedText.trim()); },
+        (decodedText) => {
+          const c = decodedText.trim();
+          const ahora = Date.now();
+          if(c === ultimoCodigo && ahora - ultimoTs < 5000) return;
+          ultimoCodigo = c;
+          ultimoTs = ahora;
+          validarEntrada(c);
+        },
         () => { /* frame sin QR detectado, se ignora */ }
       );
       cameraRunning = true;
@@ -274,25 +284,45 @@
     scanResult.style.display = 'block';
   }
 
+  function formatearFecha(v){
+    if(!v) return '—';
+    try{
+      const d = (typeof v.toDate === 'function') ? v.toDate() : new Date(v);
+      return d.toLocaleString('es-CR');
+    }catch(e){ return '—'; }
+  }
+
   let procesando = false;
 
   async function validarEntrada(codigo){
     codigo = (codigo || '').trim();
     if(!codigo || procesando) return;
+
+    // Los IDs de documento no pueden contener "/" ni ser "." o ".."
+    if(codigo.indexOf('/') !== -1 || codigo === '.' || codigo === '..' || codigo.length > 100){
+      mostrarResultadoScan('invalid', `
+        <h4>❌ Código inválido</h4>
+        <p>El formato del código no es válido. Acceso denegado.</p>
+      `);
+      return;
+    }
+
     procesando = true;
     mostrarResultadoScan('used', '<p>Verificando código…</p>');
 
     const ref = db.collection('entradas').doc(codigo);
+    const uid = (auth.currentUser && auth.currentUser.uid) ? auth.currentUser.uid : 'desconocido';
     try{
       const resultado = await db.runTransaction(async (tx) => {
         const doc = await tx.get(ref);
         if(!doc.exists){ return { estado: 'invalido' }; }
         const data = doc.data();
         if(data.estado === 'usada'){ return { estado: 'ya_usada', data }; }
+        if(data.estado !== 'activa'){ return { estado: 'no_activa', data }; }
         tx.update(ref, {
           estado: 'usada',
-          usadaEn: new Date().toISOString(),
-          validadoPor: VALIDADOR_ID
+          usadaEn: firebase.firestore.FieldValue.serverTimestamp(),
+          validadoPor: uid
         });
         return { estado: 'valida', data };
       });
@@ -303,13 +333,18 @@
           <p>Este código no corresponde a ninguna entrada registrada, fue alterado o no existe. Acceso denegado.</p>
         `);
       }else if(resultado.estado === 'ya_usada'){
-        const fecha = resultado.data.usadaEn ? new Date(resultado.data.usadaEn).toLocaleString('es-CR') : '—';
         mostrarResultadoScan('used', `
-          <h4>⚠️ Entrada ya utilizada / inactiva</h4>
+          <h4>⚠️ Entrada ya utilizada</h4>
           <p><strong>Nombre:</strong> ${escapeHtml(resultado.data.nombre||'—')}</p>
           <p><strong>Categoría:</strong> ${escapeHtml(resultado.data.tipo||'—')}</p>
-          <p><strong>Usada el:</strong> ${fecha}</p>
+          <p><strong>Usada el:</strong> ${escapeHtml(formatearFecha(resultado.data.usadaEn))}</p>
           <p>Acceso denegado — este QR ya fue usado anteriormente.</p>
+        `);
+      }else if(resultado.estado === 'no_activa'){
+        mostrarResultadoScan('invalid', `
+          <h4>❌ Entrada no activa</h4>
+          <p><strong>Nombre:</strong> ${escapeHtml(resultado.data.nombre||'—')}</p>
+          <p>Esta entrada está anulada o inactiva. Acceso denegado.</p>
         `);
       }else{
         mostrarResultadoScan('ok', `
@@ -322,7 +357,7 @@
       document.getElementById('manualCode').value = '';
     }catch(err){
       console.error('Error al validar la entrada', err);
-      mostrarResultadoScan('invalid', `<h4>❌ Error al validar</h4><p>No se pudo verificar el código. Intenta de nuevo.</p>`);
+      mostrarResultadoScan('invalid', `<h4>❌ Error al validar</h4><p>No se pudo verificar el código. Revisa la conexión e intenta de nuevo.</p>`);
     }finally{
       procesando = false;
     }
