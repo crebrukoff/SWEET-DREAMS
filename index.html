@@ -147,4 +147,197 @@
     <div class="chip">🕘 9:00 PM</div>
     <div class="chip">📍 Rancho Agüeros</div>
   </div>
-  <div
+  <div class="badge18">🔞 Exclusivamente para mayores de edad</div>
+</div>
+
+<div class="wrap">
+  <div class="card top" id="formCard">
+    <div class="section-label">💫 Datos del comprador</div>
+    <form id="regForm">
+      <label>Nombre completo<span class="req">*</span></label>
+      <input type="text" id="nombre" placeholder="Tu respuesta" required>
+
+      <label>Número de teléfono / WhatsApp<span class="req">*</span></label>
+      <input type="tel" id="telefono" placeholder="8888 8888" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required>
+      <div class="hint">8 dígitos, sin +506 (ej: 88888888)</div>
+
+      <label>Número de cédula<span class="req">*</span></label>
+      <input type="text" inputmode="numeric" id="cedula" placeholder="Tu respuesta" required>
+
+      <label>Tipo de entrada<span class="req">*</span></label>
+      <div class="radio-group" id="tipoGroup">
+        <label class="radio-option"><input type="radio" name="tipo" value="General" required>🎟️ General — ₡3.000</label>
+        <label class="radio-option"><input type="radio" name="tipo" value="VIP">👑 VIP — ₡100.000 (5 personas - Incluye litro de Buchanan's)</label>
+      </div>
+
+      <div id="ticketSection">
+        <label>¿Cuántas entradas deseas?<span class="req">*</span></label>
+        <div class="radio-group" id="ticketGroup">
+          <label class="radio-option"><input type="radio" name="entradas" value="1" required>1 entrada</label>
+          <label class="radio-option"><input type="radio" name="entradas" value="2">2 entradas</label>
+          <label class="radio-option"><input type="radio" name="entradas" value="3">3 entradas</label>
+          <label class="radio-option"><input type="radio" name="entradas" value="4">4 entradas</label>
+          <label class="radio-option"><input type="radio" name="entradas" value="5+">5 entradas </label>
+        </div>
+      </div>
+
+      <div class="note-box" id="vipNote" style="display:none;">
+        🎉 El paquete VIP incluye entrada para <strong>5 personas</strong> y un litro de Buchanan's — no necesitas elegir cantidad, ya está incluida.
+      </div>
+
+      <label class="check-option">
+        <input type="checkbox" id="edad18" required>
+        Confirmo que soy mayor de edad (18+) y que presentaré identificación en la entrada.
+      </label>
+
+      <div class="note-box">
+        El pago se coordina por SINPE con la organización después de tu registro — te vamos a escribir por WhatsApp con los datos de pago.
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">Enviar registro</button>
+    </form>
+  </div>
+
+  <div class="card confirm" id="confirmCard">
+    <div class="check">🎉</div>
+    <h2>¡Listo, quedaste registrado!</h2>
+    <p>Guarda esta confirmación. La organización se pondrá en contacto para coordinar el pago de tu(s) entrada(s).</p>
+    <div class="recap" id="recap"></div>
+    <button class="again" id="againBtn">Registrar a alguien más</button>
+  </div>
+
+  <footer>
+    Sweet Dreams · 19 dic 2026 · Rancho Agüeros · 9:00 PM
+    <br>Equipo organizador: <a href="organizador.html">Panel organizador</a>
+  </footer>
+</div>
+
+<script>
+  // Estrellitas
+  const starsEl = document.getElementById('stars');
+  for(let i=0;i<28;i++){
+    const s = document.createElement('span');
+    s.style.left = Math.random()*100+'%';
+    s.style.top = Math.random()*100+'%';
+    s.style.animationDelay = (Math.random()*3)+'s';
+    starsEl.appendChild(s);
+  }
+
+  const form = document.getElementById('regForm');
+  const formCard = document.getElementById('formCard');
+  const confirmCard = document.getElementById('confirmCard');
+  const recap = document.getElementById('recap');
+  const submitBtn = document.getElementById('submitBtn');
+
+  function generarReferencia(){
+    const parte1 = Date.now().toString(36).toUpperCase().slice(-5);
+    const parte2 = Math.random().toString(36).toUpperCase().slice(2, 5);
+    return `SD-${parte1}${parte2}`;
+  }
+
+  const telefonoInput = document.getElementById('telefono');
+  telefonoInput.addEventListener('input', () => {
+    telefonoInput.value = telefonoInput.value.replace(/\D/g, '').slice(0, 8);
+  });
+
+  const ticketSection = document.getElementById('ticketSection');
+  const vipNote = document.getElementById('vipNote');
+  const entradaRadios = document.querySelectorAll('input[name="entradas"]');
+  const fiveRadio = document.querySelector('input[name="entradas"][value="5+"]');
+
+  function actualizarSeccionCantidad(){
+    const tipoEl = document.querySelector('input[name="tipo"]:checked');
+    const esVip = tipoEl && tipoEl.value === 'VIP';
+    if(esVip){
+      ticketSection.style.display = 'none';
+      vipNote.style.display = 'block';
+      if(fiveRadio) fiveRadio.checked = true;
+    }else{
+      ticketSection.style.display = 'block';
+      vipNote.style.display = 'none';
+      entradaRadios.forEach(r => { r.checked = false; });
+    }
+  }
+  document.querySelectorAll('input[name="tipo"]').forEach(r => {
+    r.addEventListener('change', actualizarSeccionCantidad);
+  });
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCxW7bSCZafZ3QydThF_Kln_OS3FD3aQ2Y",
+    authDomain: "sweet-dreams-51493.firebaseapp.com",
+    projectId: "sweet-dreams-51493",
+    storageBucket: "sweet-dreams-51493.firebasestorage.app",
+    messagingSenderId: "609888686575",
+    appId: "1:609888686575:web:af9b844059f79e0ad6661a"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombre = document.getElementById('nombre').value.trim();
+    const telefono = document.getElementById('telefono').value.trim();
+    if(!/^\d{8}$/.test(telefono)){
+      alert('El número de teléfono debe tener exactamente 8 dígitos, sin +506 (ej: 88888888).');
+      return;
+    }
+    const cedula = document.getElementById('cedula').value.trim();
+    const tipoEl = document.querySelector('input[name="tipo"]:checked');
+    if(!tipoEl){ alert('Selecciona el tipo de entrada (General o VIP).'); return; }
+    const tipo = tipoEl.value;
+    const entradasEl = document.querySelector('input[name="entradas"]:checked');
+    if(!entradasEl){ alert('Selecciona cuántas entradas deseas.'); return; }
+    const entradas = entradasEl.value;
+    const referencia = generarReferencia();
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando…';
+
+    const entry = { nombre, telefono, cedula, tipo, entradas, referencia, ts: new Date().toISOString() };
+
+    let saveFailed = false;
+    try{
+      await db.collection('registros').add(entry);
+    }catch(err){
+      console.error('Error al guardar en Firestore', err);
+      saveFailed = true;
+    }
+
+    if(saveFailed){
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Enviar registro';
+      alert('No se pudo guardar tu registro. Por favor intenta de nuevo.');
+      return;
+    }
+
+    recap.innerHTML = `
+      <div><span>Nombre</span><span>${escapeHtml(nombre)}</span></div>
+      <div><span>Teléfono</span><span>${escapeHtml(telefono)}</span></div>
+      <div><span>Cédula</span><span>${escapeHtml(cedula)}</span></div>
+      <div><span>Tipo</span><span>${escapeHtml(tipo)}</span></div>
+      <div><span>Entradas</span><span>${tipo === 'VIP' ? 'Paquete VIP (5 personas)' : escapeHtml(entradas)}</span></div>
+      <div><span>N° de referencia</span><span>${escapeHtml(referencia)}</span></div>
+    `;
+
+    formCard.style.display = 'none';
+    confirmCard.style.display = 'block';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Enviar registro';
+  });
+
+  document.getElementById('againBtn').addEventListener('click', () => {
+    form.reset();
+    ticketSection.style.display = 'block';
+    vipNote.style.display = 'none';
+    confirmCard.style.display = 'none';
+    formCard.style.display = 'block';
+  });
+</script>
+</body>
+</html>
